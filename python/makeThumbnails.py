@@ -27,7 +27,7 @@ sopInstDict, _, _, _ = getSopInstDict(os.path.join(project["inputPath"],'referen
 
 assessors = glob.glob(os.path.join(project["inputPath"],'assessors', '*.dcm'))
 assessors.sort()
-assessors = [assessors[5]]
+assessors = [assessors[7]]
 thumbnailFiles = []
 
 for n, assessor in enumerate(assessors):
@@ -58,7 +58,7 @@ for n, assessor in enumerate(assessors):
         for roiName in roiNames:
 
             radAn.roiObjectLabelFilter = '^' + roiName + '((?!(-|_)hole).)*$'  # this filter ensures the radiomicAnalyser will only select the ROI that matches roiName without the subscript '_hole' or '-hole'
-            radAn.loadImageData(includeExtraTopAndBottomSlices=True)
+            radAn.loadImageData(includeExtraTopAndBottomSlices=True, includeContiguousEmptySlices=True) # includeContiguousEmptySlices defaults to True, but include explicitly as a reminder that this is necessary for this study
             radAn.createMask()
 
             # grab lesion mask and contours for later

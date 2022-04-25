@@ -3,6 +3,7 @@ sys.path.append('/Users/morton/Documents/GitHub/icrpythonradiomics')
 from xnatDownloader import xnatDownloader
 import glob
 import pygit2
+from time import strftime, localtime
 
 serverURL = 'https://xnatanon.icr.ac.uk/'
 
@@ -19,6 +20,6 @@ xu = xnatDownloader(serverURL = serverURL,
                     roiCollectionLabelFilter=roiCollectionLabelFilter)
 
 
-#xu.downloadAssessors_Project()
+xu.downloadAssessors_Project(destinFolder='assessors/assessors_' + strftime("%Y.%m.%d_%H.%M.%S", localtime()), subjectList=['RMH_RSRC004', 'RMH_RSRC036', 'RMH_RSRC052'])
 xu.downloadImagesReferencedByAssessors(keepEntireScan=True)
 

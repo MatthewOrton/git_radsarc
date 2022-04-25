@@ -14,6 +14,7 @@ import numpy as np
 from PyPDF2 import PdfFileMerger
 import pydicom
 import re
+from time import strftime, localtime
 
 project = {}
 project["projectStr"] = 'RADSARC-R'
@@ -21,13 +22,16 @@ project["inputPath"] = '/Users/morton/Dicom Files/RADSARC_R/XNAT'
 project["assessorStyle"] = {"type": "AIM", "format": "DCM"}
 project["roiObjectLabelFilter"] = ''
 project["paramFileName"] = '/Users/morton/Dicom Files/RADSARC_R/Params.yaml'
-project["outputPath"] = project["inputPath"]
+project["outputPath"] = os.path.join(project["inputPath"], 'roiThumbnails')
+
+thumbnailPathStr = 'roiThumbnails_'+strftime("%Y.%m.%d_%H.%M.%S", localtime())
 
 sopInstDict, _, _, _ = getSopInstDict(os.path.join(project["inputPath"],'referencedScans'))
 
-assessors = glob.glob(os.path.join(project["inputPath"],'assessors', '*.dcm'))
+assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_2022.04.25_12.37.11', '*.dcm'))
 assessors.sort()
-assessors = [assessors[7]]
+assessors = [assessors[4]]
+
 thumbnailFiles = []
 
 for n, assessor in enumerate(assessors):
@@ -67,29 +71,36 @@ for n, assessor in enumerate(assessors):
             # see if there are any ROIs for holes
             roiHoleNamesLower = [x.lower() for x in roiHoleNames]    # sometimes the capitalisation is not consistent
             indHoleRoi = [i for i, x in enumerate([roiName.lower() in x for x in roiHoleNamesLower]) if x]
-            if len(indHoleRoi)>1:
-                raise Exception('More than one "hole" ROI matching ROI: '+roiName)
+            if len(set(roiHoleNames))<len(roiHoleNames):
+                raise Exception('ROI "hole" duplicated: '+roiNames)
 
-            if len(indHoleRoi)==1:
-                radAn.roiObjectLabelFilter = roiHoleNames[indHoleRoi[0]]
-                radAn.roiObjectLabelFilter = roiHoleNames[indHoleRoi[0]]
+
+            for m in range(len(indHoleRoi)):
+                radAn.roiObjectLabelFilter = roiHoleNames[indHoleRoi[m]]
+                radAn.roiObjectLabelFilter = roiHoleNames[indHoleRoi[m]]
                 # this is not an ideal way to do this, but we will change roiObjectLabelFound to be the one we want
-                radAn.roiObjectLabelFound =  roiHoleNames[indHoleRoi[0]]
+                radAn.roiObjectLabelFound =  roiHoleNames[indHoleRoi[m]]
                 radAn.createMask()
                 # grab mask and contours
-                maskHole = copy.deepcopy(radAn.mask)
-                contoursHole = copy.deepcopy(radAn.contours)
+                if m==0:
+                    maskHole = copy.deepcopy(radAn.mask)
+                    #contoursHole = copy.deepcopy(radAn.contours)
+                else:
+                    maskHole = np.logical_or(maskHole, radAn.mask)
+                    #contoursHole = copy.deepcopy(radAn.contours)
                 radAn.mask = maskLesion
                 radAn.removeFromMask(maskHole)
                 radAn.contours = contoursLesion
-                radAn.contoursDelete = contoursHole
+                #radAn.contoursDelete = contoursHole
+
+            continue
 
             showMaskBoundary = True
             showContours = False
             showMaskHolesWithNewColour = False
             vmin = -135
             vmax = 215
-            thumbnail = radAn.saveThumbnail(vmin=vmin, vmax=vmax, showMaskBoundary=showMaskBoundary, showContours = showContours, showHistogram=False, linewidth=0.04, showMaskHolesWithNewColour=showMaskHolesWithNewColour) #, pathStr='roiThumbnailsNew')
+            thumbnail = radAn.saveThumbnail(vmin=vmin, vmax=vmax, showMaskBoundary=showMaskBoundary, showContours = showContours, showHistogram=False, linewidth=0.04, showMaskHolesWithNewColour=showMaskHolesWithNewColour, pathStr=thumbnailPathStr)
             thumbnailFiles.append(thumbnail["fileName"])
 
     except:

@@ -19,7 +19,10 @@ xu = xnatDownloader(serverURL = serverURL,
                     assessorStyle=assessorStyle,
                     roiCollectionLabelFilter=roiCollectionLabelFilter)
 
+# xu.assessorFolder = 'assessors/assessors_2022.04.27_11.55.08'
 
-xu.downloadAssessors_Project(destinFolder='assessors/assessors_' + strftime("%Y.%m.%d_%H.%M.%S", localtime()), subjectList=['RMH_RSRC004', 'RMH_RSRC036', 'RMH_RSRC052'])
-xu.downloadImagesReferencedByAssessors(keepEntireScan=True)
+xu.getProjectDigest()
+
+#xu.downloadAssessors_Project(destinFolder='assessors/assessors_' + strftime("%Y.%m.%d_%H.%M.%S", localtime())) #, subjectList=['RMH_RSRC004', 'RMH_RSRC036', 'RMH_RSRC052'])
+#xu.downloadImagesReferencedByAssessors(keepEntireScan=True)
 

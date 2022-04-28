@@ -28,11 +28,10 @@ thumbnailPathStr = 'roiThumbnails_'+strftime("%Y.%m.%d_%H.%M.%S", localtime())
 
 sopInstDict, _, _, _ = getSopInstDict(os.path.join(project["inputPath"],'referencedScans'))
 
-assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_2022.04.25_12.37.11', '*.dcm'))
+assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_2022.04.27_20.25.16', '*.dcm'))
 assessors.sort()
-assessors = [assessors[4]]
-
 thumbnailFiles = []
+
 
 for n, assessor in enumerate(assessors):
     try:
@@ -41,10 +40,14 @@ for n, assessor in enumerate(assessors):
         if not os.path.exists(patientScanFolder):
             raise Exception("Scan folder not found!")
 
+        radAn = radiomicAnalyser(project, assessor) #, roiShift=[-1, -1])
+
         _, _, instanceNumDict, sopInst2instanceNumberDict = getSopInstDict(patientScanFolder)
         extraDictionaries = {'instanceNumDict':instanceNumDict, 'sopInst2instanceNumberDict':sopInst2instanceNumberDict}
 
-        radAn = radiomicAnalyser(project, assessor, sopInstDict=sopInstDict, extraDictionaries=extraDictionaries) #, roiShift=[-1, -1])
+        radAn.sopInstDict = sopInstDict
+        radAn.extraDictionaries = extraDictionaries
+
 
         # find all ROIs with names matching roiObjectLabelFilter
         rtsDcm = pydicom.dcmread(assessor)
@@ -93,11 +96,11 @@ for n, assessor in enumerate(assessors):
                 radAn.contours = contoursLesion
                 #radAn.contoursDelete = contoursHole
 
-            continue
+            #continue
 
             showMaskBoundary = True
             showContours = False
-            showMaskHolesWithNewColour = False
+            showMaskHolesWithNewColour = True
             vmin = -135
             vmax = 215
             thumbnail = radAn.saveThumbnail(vmin=vmin, vmax=vmax, showMaskBoundary=showMaskBoundary, showContours = showContours, showHistogram=False, linewidth=0.04, showMaskHolesWithNewColour=showMaskHolesWithNewColour, pathStr=thumbnailPathStr)

@@ -20,12 +20,7 @@ xu = xnatDownloader(serverURL = serverURL,
                     roiCollectionLabelFilter=roiCollectionLabelFilter)
 
 scanList = []
-scanList.append(['20180125_094000_Aquilion', '3'])
-scanList.append(['20180824_153000_Aquilion', '6'])
-scanList.append(['20180205_100500_SOMATOM', '2'])
-scanList.append(['20180910_093000_SOMATOM', '2'])
-scanList.append(['20180914_120000_Brilliance', '5'])
-scanList.append(['20181104_075000_Discovery', '3'])
+scanList.append(['20180110_131500_Optima', '3'])
 
 xu.scanList_downloadScans(scanList, destinFolder='scans_' + strftime("%Y.%m.%d_%H.%M.%S", localtime()) + '/originals')
 

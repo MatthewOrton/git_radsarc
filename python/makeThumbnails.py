@@ -111,28 +111,14 @@ for n, assessor in enumerate(assessors):
         traceback.print_exc(file=sys.stdout)
         print('_'*50 + '\033[0;30;48m')
 
-# # combine thumbnail pdfs into one doc
-# if len(thumbnailFiles) > 0:
-#     thumbnailFiles.sort()
-#     n = 0
-#     m = 0
-#     while n<len(thumbnailFiles):
-#         if m==0:
-#             startID = os.path.split(thumbnailFiles[n])[1].split('_')[5]
-#             merger = PdfFileMerger()
-#
-#         merger.append(thumbnailFiles[n])
-#
-#         thisPatientName = os.path.split(thumbnailFiles[n])[1].split('__II__')[0]
-#         isLastFile = n == (len(thumbnailFiles)-1)
-#         if isLastFile or (m>=9 and thisPatientName != os.path.split(thumbnailFiles[n + 1])[1].split('__II__')[0]): # 39
-#             endID = os.path.split(thumbnailFiles[n])[1].split('_')[5]
-#             #combinedFile = os.path.join(project["outputPath"], 'roiThumbnails', 'roiThumbnails_' + startID + '-' + endID + '.pdf')
-#             combinedFile = os.path.join('/Users/morton/Dicom Files/BRC_GCT/XNAT', 'roiThumbnails', 'roiThumbnails_' + startID + '-' + endID + '.pdf')
-#             merger.write(combinedFile)
-#             merger.close()
-#             m = -1
-#         n += 1
-#         m += 1
+
+# combine thumbnail pdfs into one doc
+if len(thumbnailFiles)>0:
+    thumbnailFiles.sort()
+    merger = PdfFileMerger()
+    for pdf in thumbnailFiles:
+        merger.append(pdf)
+    merger.write(os.path.join(project["outputPath"], thumbnailPathStr, 'roiThumbnails.pdf'))
+    merger.close()
 
 

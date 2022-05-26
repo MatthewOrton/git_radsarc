@@ -1,7 +1,7 @@
 clear variables
 close all
 
-rootFolder = '/Users/morton/Dicom Files/RADSARC_R/XNAT/scansForResampling/scans_2022.04.27_23.43.09';
+rootFolder = '/Users/morton/Dicom Files/RADSARC_R/XNAT/scansForResampling/scans_2022.05.26_11.15.23';
 
 Logger = log4m.getLogger(fullfile(rootFolder, 'resampling_logfile.txt'));
 

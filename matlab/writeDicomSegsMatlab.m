@@ -1,7 +1,7 @@
-function writeDicomSegsMatlab(pack, collectionLabel, roiLabel, sopInstMap, rtsFileName, segFolder)
+function writeDicomSegsMatlab(pack, collectionLabel, sopInstMap, rtsFileName, segFolder)
 
 seg = dicominfo('/Users/morton/Dicom Files/TracerX/XNAT_Collaborations_Local/SEG_template.dcm');
-source = dicominfo(sopInstMap(pack(1).sopInstance).file);
+source = dicominfo(sopInstMap(pack{1}.data(1).sopInstance).file);
 
 % sort basic header info by copying or new values
 seg.SopInstanceUID =  dicomuid;
@@ -18,15 +18,18 @@ seg.ContentTime = timeNow;
 
 seg.Manufacturer = source.Manufacturer;
 seg.ReferringPhysicianName = '';
-seg.SeriesDescription = collectionLabel;
-seg.ContentLabel = collectionLabel;
+seg.SeriesDescription = 'SeriesDescription'; %collectionLabel;
+seg.ContentLabel = 'ContentLabel'; %collectionLabel;
 seg.ManufacturerModelName = source.ManufacturerModelName;
 
 % ReferencedSeriesSequence
 seg.ReferencedSeriesSequence.Item_1.SeriesInstanceUID = source.SeriesInstanceUID;
-for n = 1:length(pack)
+% get list of referenced SopInstanceUIDs without duplicates
+refInst = cellfunQ(@(y) arrayfunQ(@(x) x.sopInstance, y.data), pack);
+refInst = unique(cat(2, refInst{:}));
+for n = 1:length(refInst)
     refInsSeq.(['Item_' num2str(n)]) = struct('ReferencedSOPClassUID', source.SOPClassUID, ...
-                                              'ReferencedSOPInstanceUID', pack(n).sopInstance);
+                                              'ReferencedSOPInstanceUID', refInst{n});
 end
 seg.ReferencedSeriesSequence.Item_1.ReferencedInstanceSequence = refInsSeq;
 
@@ -52,18 +55,17 @@ seg.DimensionOrganizationSequence.Item_1.DimensionOrganizationUID = newDimension
 seg.DimensionIndexSequence.Item_1.DimensionOrganizationUID = newDimensionOrganizationUID;
 seg.DimensionIndexSequence.Item_2.DimensionOrganizationUID = newDimensionOrganizationUID;
 
-seg.NumberOfFrames = length(pack);
+allFrames = cellfunQ(@(y) arrayfunQ(@(x) x.sopInstance, y.data), pack);
+seg.NumberOfFrames = length(cat(2, allFrames{:}));
 
 % SegmentSequence % Need multiple
-seg.SegmentSequence.Item_1.SegmentLabel = roiLabel;
-% seg.SegmentSequence.Item_1 = 
-% SegmentedPropertyCategoryCodeSequence: [1×1 struct]
-%                             SegmentNumber: 1
-%                              SegmentLabel: 'seg1'
-%                      SegmentAlgorithmType: 'MANUAL'
-%             RecommendedDisplayCIELabValue: [3×1 uint16]
-%         SegmentedPropertyTypeCodeSequence: [1×1 struct]
-
+segSeqTemplate = seg.SegmentSequence.Item_1;
+for n = 1:length(pack)
+    segSeqTemplate.SegmentLabel = pack{n}.label;
+    segSeqTemplate.SegmentNumber = n;
+    seg.SegmentSequence.(['Item_' num2str(n)]) = segSeqTemplate;
+end
+    
 % SharedFunctionalGroupsSequence
 seg.SharedFunctionalGroupsSequence.Item_1.PlaneOrientationSequence.Item_1.ImageOrientationPatient = source.ImageOrientationPatient;
 seg.SharedFunctionalGroupsSequence.Item_1.PixelMeasuresSequence.Item_1.SliceThickness = source.SliceThickness;
@@ -79,30 +81,36 @@ else
 end
     
 
-% PerFrameFunctionalGroupsSequence % Need multiple
+% PerFrameFunctionalGroupsSequence % Need multiple - these are a single list for all mask volumes, and one item per slice
 pffgTemplate = seg.PerFrameFunctionalGroupsSequence.Item_1;
+itemCount = 0;
 for n = 1:length(pack)
-    thisSource = dicominfo(sopInstMap(pack(n).sopInstance).file);
-    pffgTemplate.DerivationImageSequence.Item_1.SourceImageSequence.Item_1.ReferencedSOPInstanceUID = thisSource.SOPInstanceUID;
-    pffgTemplate.DerivationImageSequence.Item_1.SourceImageSequence.Item_1.ReferencedSOPClassUID = thisSource.SOPClassUID;
-    
-    % Despite looking it up, I don't quite understand DimensionIndexValues, but I think putting the
-    % InstanceNumber of the source image in element 2 will work...
-    pffgTemplate.FrameContentSequence.Item_1.DimensionIndexValues = [1; thisSource.InstanceNumber];
-    
-    pffgTemplate.PlanePositionSequence.Item_1.ImagePositionPatient = thisSource.ImagePositionPatient;
-    % pffgTemplate.SegmentIdentificationSequence can stay the same
-    pfgs.(['Item_' num2str(n)]) = pffgTemplate;
+    for m = 1:length(pack{n}.data)
+        thisSource = dicominfo(sopInstMap(pack{n}.data(m).sopInstance).file);
+        pffgTemplate.DerivationImageSequence.Item_1.SourceImageSequence.Item_1.ReferencedSOPInstanceUID = thisSource.SOPInstanceUID;
+        pffgTemplate.DerivationImageSequence.Item_1.SourceImageSequence.Item_1.ReferencedSOPClassUID = thisSource.SOPClassUID;
+        
+        % Despite looking it up, I don't quite understand DimensionIndexValues, but I think putting the
+        % InstanceNumber of the source image in element 2 will work...
+        pffgTemplate.FrameContentSequence.Item_1.DimensionIndexValues = [1; thisSource.InstanceNumber];
+        
+        pffgTemplate.PlanePositionSequence.Item_1.ImagePositionPatient = thisSource.ImagePositionPatient;
+        pffgTemplate.SegmentIdentificationSequence.Item_1.ReferencedSegmentNumber = n;
+        
+        itemCount = itemCount + 1;
+        pfgs.(['Item_' num2str(itemCount)]) = pffgTemplate;
+        
+        X(:,:,1,itemCount) = pack{n}.data(m).mask==1;
+    end
 end
 seg.PerFrameFunctionalGroupsSequence = pfgs;
 
 % write into dicomSeg.  NB. this file is not well-formed as the pixel data
 % for a dicomSeg should be per bit, but this is as 8-bit integers.  Matlab
 % will read this file OK, but nothing else will!
-X = cell2mat(reshape(arrayfun(@(x) x.mask, pack, 'UniformOutput', false),[1 1 1 length(pack)]))==1;
 
-segFileName = strrep(rtsFileName,'.dcm',['_' collectionLabel '.dcm']);
-segFolder = fullfile(segFolder, collectionLabel);
+segFileName = strrep(rtsFileName,'.dcm',['_SEG_' collectionLabel '.dcm']);
+%segFolder = fullfile(segFolder, collectionLabel);
 segFile = fullfile(segFolder, segFileName);
 if ~exist(segFolder,'dir')
     mkdir(segFolder)
@@ -126,8 +134,8 @@ import org.dcm4che2.data.*
 
 jDcm = DicomUtils.readDicomFile(java.io.File(segFile));
 
-jDcm.putInt(Tag.Rows, VR.US, size(pack(1).mask,1));
-jDcm.putInt(Tag.Columns, VR.US, size(pack(1).mask,2));
+jDcm.putInt(Tag.Rows, VR.US, size(pack{1}.data(1).mask,1));
+jDcm.putInt(Tag.Columns, VR.US, size(pack{1}.data(1).mask,2));
 
 jDcm.putInt(Tag.BitsAllocated, VR.US, uint8(1));
 jDcm.putInt(Tag.BitsStored, VR.US, uint8(1));

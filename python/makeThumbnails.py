@@ -26,12 +26,13 @@ project["outputPath"] = os.path.join(project["inputPath"], 'roiThumbnails')
 
 thumbnailPathStr = 'roiThumbnails_'+strftime("%Y.%m.%d_%H.%M.%S", localtime())
 
-sopInstDict, _, _, _ = getSopInstDict(os.path.join(project["inputPath"],'referencedScans'))
+sopInstDict, _, _, _, _ = getSopInstDict(os.path.join(project["inputPath"],'referencedScans'))
 
-assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_2022.04.27_20.25.16', '*.dcm'))
+assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_2022.05.25_17.48.31', '*.dcm'))
 assessors.sort()
-thumbnailFiles = []
 
+thumbnailFiles = []
+warningMessages = []
 
 for n, assessor in enumerate(assessors):
     try:
@@ -42,8 +43,15 @@ for n, assessor in enumerate(assessors):
 
         radAn = radiomicAnalyser(project, assessor) #, roiShift=[-1, -1])
 
-        _, _, instanceNumDict, sopInst2instanceNumberDict = getSopInstDict(patientScanFolder)
+        _, _, instanceNumDict, sopInst2instanceNumberDict, sopInstDictWarningMessages = getSopInstDict(patientScanFolder)
         extraDictionaries = {'instanceNumDict':instanceNumDict, 'sopInst2instanceNumberDict':sopInst2instanceNumberDict}
+
+        if len(sopInstDictWarningMessages)==0:
+            sopInstDictWarning = ''
+        if len(sopInstDictWarningMessages)==1:
+            sopInstDictWarning = sopInstDictWarningMessages[0]
+            warningMessages.append(sopInstDictWarning + assessor)
+
 
         radAn.sopInstDict = sopInstDict
         radAn.extraDictionaries = extraDictionaries
@@ -65,7 +73,9 @@ for n, assessor in enumerate(assessors):
         for roiName in roiNames:
 
             radAn.roiObjectLabelFilter = '^' + roiName + '((?!(-|_)hole).)*$'  # this filter ensures the radiomicAnalyser will only select the ROI that matches roiName without the subscript '_hole' or '-hole'
-            radAn.loadImageData(includeExtraTopAndBottomSlices=True, includeContiguousEmptySlices=True) # includeContiguousEmptySlices defaults to True, but include explicitly as a reminder that this is necessary for this study
+            warningMessage = radAn.loadImageData(includeExtraTopAndBottomSlices=True, includeContiguousEmptySlices=True) # includeContiguousEmptySlices defaults to True, but include explicitly as a reminder that this is necessary for this study
+            if warningMessage != '':
+                warningMessages.append(warningMessage)
             radAn.createMask()
 
             # grab lesion mask and contours for later
@@ -103,7 +113,7 @@ for n, assessor in enumerate(assessors):
             showMaskHolesWithNewColour = True
             vmin = -135
             vmax = 215
-            thumbnail = radAn.saveThumbnail(vmin=vmin, vmax=vmax, showMaskBoundary=showMaskBoundary, showContours = showContours, showHistogram=False, linewidth=0.04, showMaskHolesWithNewColour=showMaskHolesWithNewColour, pathStr=thumbnailPathStr)
+            thumbnail = radAn.saveThumbnail(vmin=vmin, vmax=vmax, showMaskBoundary=showMaskBoundary, showContours = showContours, showHistogram=False, linewidth=0.04, showMaskHolesWithNewColour=showMaskHolesWithNewColour, pathStr=thumbnailPathStr, warningMessage=sopInstDictWarning)
             thumbnailFiles.append(thumbnail["fileName"])
 
     except:
@@ -121,4 +131,9 @@ if len(thumbnailFiles)>0:
     merger.write(os.path.join(project["outputPath"], thumbnailPathStr, 'roiThumbnails.pdf'))
     merger.close()
 
-
+print(' ')
+print('_______________________')
+print('Warning messages')
+print(' ')
+for warningMessage in warningMessages:
+    print(warningMessage)

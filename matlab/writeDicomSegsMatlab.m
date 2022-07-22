@@ -1,4 +1,4 @@
-function writeDicomSegsMatlab(pack, collectionLabel, sopInstMap, rtsFileName, segFolder)
+function writeDicomSegsMatlab(pack, collectionLabel, sopInstMap, outputFilename)
 
 seg = dicominfo('/Users/morton/Dicom Files/TracerX/XNAT_Collaborations_Local/SEG_template.dcm');
 source = dicominfo(sopInstMap(pack{1}.data(1).sopInstance).file);
@@ -18,7 +18,7 @@ seg.ContentTime = timeNow;
 
 seg.Manufacturer = source.Manufacturer;
 seg.ReferringPhysicianName = '';
-seg.SeriesDescription = 'SeriesDescription'; %collectionLabel;
+seg.SeriesDescription = collectionLabel;
 seg.ContentLabel = 'ContentLabel'; %collectionLabel;
 seg.ManufacturerModelName = source.ManufacturerModelName;
 
@@ -109,14 +109,7 @@ seg.PerFrameFunctionalGroupsSequence = pfgs;
 % for a dicomSeg should be per bit, but this is as 8-bit integers.  Matlab
 % will read this file OK, but nothing else will!
 
-segFileName = strrep(rtsFileName,'.dcm',['_SEG_' collectionLabel '.dcm']);
-%segFolder = fullfile(segFolder, collectionLabel);
-segFile = fullfile(segFolder, segFileName);
-if ~exist(segFolder,'dir')
-    mkdir(segFolder)
-end
-
-dicomwrite(uint8(X), segFile, seg, 'CreateMode', 'copy');
+dicomwrite(uint8(X), outputFilename, seg, 'CreateMode', 'copy');
 
 % convert X to binary representation
 X = squeeze(X);
@@ -127,12 +120,16 @@ newLength = nBits*ceil(length(X)/nBits);
 X = [X; false(newLength-length(X),1)];
 X = reshape(X,nBits,length(X)/nBits)';
 X = fliplr(X);
-B = bin2dec(num2str(X));
+%B = bin2dec(num2str(X));
+B = zeros(size(X,1),1); 
+for n = 1:8
+    B = B + 2^(8-n)*X(:,n); 
+end
 
 import icr.etherj.dicom.*
 import org.dcm4che2.data.*
 
-jDcm = DicomUtils.readDicomFile(java.io.File(segFile));
+jDcm = DicomUtils.readDicomFile(java.io.File(outputFilename));
 
 jDcm.putInt(Tag.Rows, VR.US, size(pack{1}.data(1).mask,1));
 jDcm.putInt(Tag.Columns, VR.US, size(pack{1}.data(1).mask,2));
@@ -144,7 +141,4 @@ jDcm.putInt(Tag.PixelRepresentation, VR.US, uint8(0));
 
 jDcm.putBytes(Tag.PixelData, VR.OB, uint8(B));
 
-DicomUtils.writeDicomFile(jDcm,java.io.File(segFile));
-
-disp(['written : ' segFile])
-
+DicomUtils.writeDicomFile(jDcm,java.io.File(outputFilename));

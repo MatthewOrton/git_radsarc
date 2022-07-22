@@ -1,7 +1,7 @@
 clear variables
 close all
 
-rootFolder = '/Users/morton/Dicom Files/RADSARC_R/XNAT/scansForResampling/scans_2022.05.26_11.15.23';
+rootFolder = '/Users/morton/Dicom Files/RADSARC_R/XNAT/scansForResampling/scans_2022.06.20_21.39.07';
 
 scanFolders = dir(fullfile(rootFolder, 'originals', '*__II__*'));
 

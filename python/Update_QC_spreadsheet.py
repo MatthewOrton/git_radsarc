@@ -5,6 +5,7 @@ import glob
 import pygit2
 import pandas as pd
 from time import strftime, localtime
+import numpy as np
 
 serverURL = 'https://xnatanon.icr.ac.uk/'
 
@@ -24,11 +25,23 @@ xu = xnatDownloader(serverURL = serverURL,
 experimentList = xu.getExperimentList_Project()
 assessorList = xu.getAssessorList_experimentList(experimentList)
 
+# remove any that are SEG files
+assessorList = [x for x in assessorList if 'AIM' in x['assessor']]
+
+# remove any that match local version of dediff ROIs
+assessorsDediff = glob.glob(os.path.join(downloadPath, 'assessors', 'assessors_2022.07.20_09.51.14', 'dediff', '*.dcm'))
+for assessorDediff in assessorsDediff:
+    name = assessorDediff.split('__II__')[3].replace('.dcm','')
+    idx = np.where(np.array([x['assessor'] == name for x in assessorList]))[0]
+    if len(idx)>0:
+        assessorList.pop(idx[0])
+
+
 # get list of thumbnail files in most recent run of thumbnail generation (need to update folder name)
-thumbnailPath = os.path.join(downloadPath, 'roiThumbnails', 'roiThumbnails_2022.05.25_21.06.02')
+thumbnailPath = os.path.join(downloadPath, 'roiThumbnails', 'roiThumbnails_2022.07.21_21.26.28')
 thumbnailFiles = glob.glob(os.path.join(thumbnailPath, 'subjects', '*.pdf'))
 
-# loop over assessors found and see if there is a corresponding thumbnail file, and store the file anem if there is
+# loop over assessors found and see if there is a corresponding thumbnail file, and store the file name if there is
 for assessor in assessorList:
     thumbMatch = []
     for thumbnailFile in thumbnailFiles:

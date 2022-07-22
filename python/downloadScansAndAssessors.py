@@ -10,7 +10,7 @@ serverURL = 'https://xnatanon.icr.ac.uk/'
 projectStr = 'RADSARC-R'
 downloadPath = '/Users/morton/Dicom Files/RADSARC_R/XNAT'
 assessorStyle = {"type": "AIM", "format": "DCM"}
-roiCollectionLabelFilter = '' #Lesion'
+roiCollectionLabelFilter = ''
 
 xu = xnatDownloader(serverURL = serverURL,
                     projectStr=projectStr,
@@ -19,10 +19,20 @@ xu = xnatDownloader(serverURL = serverURL,
                     assessorStyle=assessorStyle,
                     roiCollectionLabelFilter=roiCollectionLabelFilter)
 
-# xu.assessorFolder = 'assessors/assessors_2022.04.27_11.55.08'
+assessorFolder = 'assessors_' + strftime("%Y.%m.%d_%H.%M.%S", localtime())
 
 #xu.getProjectDigest()
 
-xu.downloadAssessors_Project(destinFolder='assessors/assessors_' + strftime("%Y.%m.%d_%H.%M.%S", localtime())) #, subjectList=['RMH_RSRC004', 'RMH_RSRC036', 'RMH_RSRC052'])
+# subjectList = ['RMH_RSRC165'] #, 'RMH_RSRC122', 'RMH_RSRC148', 'RMH_RSRC149', 'RMH_RSRC158', 'RMH_RSRC161', 'RMH_RSRC165', 'RMH_RSRC167', 'RMH_RSRC171', 'RMH_RSRC180', 'RMH_RSRC183']
+
+roiCollectionLabelFilter = 'dediff'
+xu.roiCollectionLabelFilter = roiCollectionLabelFilter
+xu.downloadAssessors_Project(destinFolder=os.path.join('assessors',assessorFolder, roiCollectionLabelFilter)) #, subjectList=subjectList)
+
+roiCollectionLabelFilter = 'lesion'
+xu.roiCollectionLabelFilter = roiCollectionLabelFilter
+xu.downloadAssessors_Project(destinFolder=os.path.join('assessors',assessorFolder, roiCollectionLabelFilter)) #, subjectList=subjectList)
+
+
 xu.downloadImagesReferencedByAssessors(keepEntireScan=True)
 

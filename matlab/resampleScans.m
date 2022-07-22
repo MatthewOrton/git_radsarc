@@ -1,13 +1,13 @@
 clear variables
 close all
 
-rootFolder = '/Users/morton/Dicom Files/RADSARC_R/XNAT/scansForResampling/scans_2022.05.28_21.54.42';
+rootFolder = '/Users/morton/Dicom Files/RADSARC_R/XNAT/scansForResampling/scans_2022.06.29_20.35.37';
 
 Logger = log4m.getLogger(fullfile(rootFolder, 'resampling_logfile.txt'));
 
 scanFolders = dir(fullfile(rootFolder, 'originals', '*__II__*'));
 
-for m = 1:length(scanFolders)
+for m = 2 %1:length(scanFolders)
     
     targetVoxelSize = [1 1 5];
     patientCommentEditFunc = @(x) x;

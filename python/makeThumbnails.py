@@ -28,7 +28,7 @@ thumbnailPathStr = 'roiThumbnails_'+strftime("%Y.%m.%d_%H.%M.%S", localtime())
 
 sopInstDict, _, _, _, _ = getSopInstDict(os.path.join(project["inputPath"],'referencedScans'))
 
-assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_2022.05.25_17.48.31', '*.dcm'))
+assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_2022.07.20_09.51.14', 'lesion', '*.dcm'))
 assessors.sort()
 
 thumbnailFiles = []

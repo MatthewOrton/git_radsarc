@@ -6,6 +6,7 @@ import pygit2
 import pandas as pd
 from time import strftime, localtime
 import numpy as np
+import copy
 
 serverURL = 'https://xnatanon.icr.ac.uk/'
 
@@ -29,7 +30,7 @@ assessorList = xu.getAssessorList_experimentList(experimentList)
 assessorList = [x for x in assessorList if 'AIM' in x['assessor']]
 
 # remove any that match local version of dediff ROIs
-assessorsDediff = glob.glob(os.path.join(downloadPath, 'assessors', 'assessors_2022.07.20_09.51.14', 'dediff', '*.dcm'))
+assessorsDediff = glob.glob(os.path.join(downloadPath, 'assessors', 'assessors_2022.08.09_22.27.30', 'dediff', '*.dcm'))
 for assessorDediff in assessorsDediff:
     name = assessorDediff.split('__II__')[3].replace('.dcm','')
     idx = np.where(np.array([x['assessor'] == name for x in assessorList]))[0]
@@ -38,7 +39,7 @@ for assessorDediff in assessorsDediff:
 
 
 # get list of thumbnail files in most recent run of thumbnail generation (need to update folder name)
-thumbnailPath = os.path.join(downloadPath, 'roiThumbnails', 'roiThumbnails_2022.07.21_21.26.28')
+thumbnailPath = os.path.join(downloadPath, 'roiThumbnails', 'roiThumbnailsV2_2022.08.09_22.27.30')
 thumbnailFiles = glob.glob(os.path.join(thumbnailPath, 'subjects', '*.pdf'))
 
 # loop over assessors found and see if there is a corresponding thumbnail file, and store the file name if there is
@@ -69,10 +70,17 @@ dfMaster = pd.read_excel(os.path.join(downloadPath, 'roiThumbnails', 'Thumbnail_
 # copy Checked status from Master for any matching rows
 for _, row in df.iterrows():
     for _, rowMaster in dfMaster.iterrows():
+
+        # this should only be needed for one update because the old files included the lesion name, but the new ones do not
+        thisMasterThumb = copy.deepcopy(rowMaster['ThumbnailFile'])
+        if isinstance(thisMasterThumb, str):
+            idx = thisMasterThumb.lower().find('_lesion')
+            thisMasterThumb = thisMasterThumb[0:idx] + '.pdf'
+
         if row['SubjectID']==rowMaster['SubjectID'] and \
                 row['ExperimentID']==rowMaster['ExperimentID'] and \
                 row['AssessorID'] == rowMaster['AssessorID'] and \
-                row['ThumbnailFile']==rowMaster['ThumbnailFile']:
+                row['ThumbnailFile']==thisMasterThumb:
                     row['Checked'] = rowMaster['Checked']
 
 # write new QC file

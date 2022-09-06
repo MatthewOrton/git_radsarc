@@ -11,28 +11,45 @@ projectStr = 'RADSARC-R'
 downloadPath = '/Users/morton/Dicom Files/RADSARC_R/XNAT'
 assessorStyle = {"type": "AIM", "format": "DCM"}
 roiCollectionLabelFilter = ''
+roiCollectionLabelFilterExclude = 'legacy'
 
 xu = xnatDownloader(serverURL = serverURL,
                     projectStr=projectStr,
                     downloadPath=downloadPath,
                     removeSecondaryAndSnapshots=True,
                     assessorStyle=assessorStyle,
-                    roiCollectionLabelFilter=roiCollectionLabelFilter)
+                    roiCollectionLabelFilter=roiCollectionLabelFilter,
+                    roiCollectionLabelFilterExclude=roiCollectionLabelFilterExclude)
 
 assessorFolder = 'assessors_' + strftime("%Y.%m.%d_%H.%M.%S", localtime())
 
-#xu.getProjectDigest()
+# xu.getProjectDigest()
 
-# subjectList = ['RMH_RSRC165'] #, 'RMH_RSRC122', 'RMH_RSRC148', 'RMH_RSRC149', 'RMH_RSRC158', 'RMH_RSRC161', 'RMH_RSRC165', 'RMH_RSRC167', 'RMH_RSRC171', 'RMH_RSRC180', 'RMH_RSRC183']
 
-roiCollectionLabelFilter = 'dediff'
+# # roiCollectionLabelFilter = 'dediff'
+# # xu.roiCollectionLabelFilter = roiCollectionLabelFilter
+# # xu.downloadAssessors_Project(destinFolder=os.path.join('assessors',assessorFolder, roiCollectionLabelFilter))
+# #
+# # # this is a special case where there may be an assessor for patID = 145 which has been excluded, so delete here
+# # assessorDelete = glob.glob(os.path.join(downloadPath, 'assessors', assessorFolder, roiCollectionLabelFilter, 'RMH_RSRC145*.dcm'))
+# # if len(assessorDelete)==1:
+# #     os.remove(assessorDelete[0])
+# #
+# after downloading this section the repro assessors will be in the same folder, so delete repro assessors from lesion folder after completing download
+roiCollectionLabelFilter = 'lesion_repro'
 xu.roiCollectionLabelFilter = roiCollectionLabelFilter
-xu.downloadAssessors_Project(destinFolder=os.path.join('assessors',assessorFolder, roiCollectionLabelFilter)) #, subjectList=subjectList)
+xu.downloadAssessors_Project(destinFolder=os.path.join('assessors',assessorFolder, roiCollectionLabelFilter), subjectList=['RMH_RSRC072'])
+#
+# # this is a special case where there may be an assessor for patID = 145 which has been excluded, so delete here
+# assessorDelete = glob.glob(os.path.join(downloadPath, 'assessors', assessorFolder, roiCollectionLabelFilter, 'RMH_RSRC145*.dcm'))
+# if len(assessorDelete)==1:
+#     os.remove(assessorDelete[0])
+#
+# roiCollectionLabelFilter = 'repro'
+# xu.roiCollectionLabelFilter = roiCollectionLabelFilter
+# xu.downloadAssessors_Project(destinFolder=os.path.join('assessors',assessorFolder, roiCollectionLabelFilter))
+#
 
-roiCollectionLabelFilter = 'lesion'
-xu.roiCollectionLabelFilter = roiCollectionLabelFilter
-xu.downloadAssessors_Project(destinFolder=os.path.join('assessors',assessorFolder, roiCollectionLabelFilter)) #, subjectList=subjectList)
 
-
-xu.downloadImagesReferencedByAssessors(keepEntireScan=True)
+# xu.downloadImagesReferencedByAssessors(keepEntireScan=True)
 

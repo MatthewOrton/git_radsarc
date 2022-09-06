@@ -28,7 +28,7 @@ thumbnailPathStr = 'roiThumbnails_'+strftime("%Y.%m.%d_%H.%M.%S", localtime())
 
 sopInstDict, _, _, _, _ = getSopInstDict(os.path.join(project["inputPath"],'referencedScans'))
 
-assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_2022.07.20_09.51.14', 'lesion', '*.dcm'))
+assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_2022.08.08_16.05.46', 'lesion', '*.dcm'))
 assessors.sort()
 
 thumbnailFiles = []
@@ -41,7 +41,7 @@ for n, assessor in enumerate(assessors):
         if not os.path.exists(patientScanFolder):
             raise Exception("Scan folder not found!")
 
-        radAn = radiomicAnalyser(project, assessor) #, roiShift=[-1, -1])
+        radAn = radiomicAnalyser(project, assessor)
 
         _, _, instanceNumDict, sopInst2instanceNumberDict, sopInstDictWarningMessages = getSopInstDict(patientScanFolder)
         extraDictionaries = {'instanceNumDict':instanceNumDict, 'sopInst2instanceNumberDict':sopInst2instanceNumberDict}

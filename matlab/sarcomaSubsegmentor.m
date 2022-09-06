@@ -1,12 +1,21 @@
-function [masks, roi, dediffProbe, prior, gmm] = sarcomaSubsegmentor(rtsFile, dediffRts, sopInstMap, prior, showProgressBar)
+function [masks, roi, dediffProbe, prior, gmm] = sarcomaSubsegmentor(rtsFile, onlyLoadData, dediffRts, sopInstMap, prior, showProgressBar)
 
 % load image and mask and dediff probe
 [roi, dediffProbe] = loadData;
 
-% roi.im = roi.im(:,:,[47 71 118]);
-% roi.mask = roi.mask(:,:,[47 71 118]);
-% %dediffProbe.mask = dediffProbe.mask(:,:,2);
-% dediffProbe.sliceIndex = [2 3 1];
+if onlyLoadData
+    masks = repmat(roi.mask,[1 1 1 4]);
+    prior = [];
+    gmm = [];
+    return
+end
+
+% smoothedThreshold(roi.im, [-200 200], roi.mask); return
+
+% skip = 5;
+% roi.im = roi.im(:,:,1:skip:end); roi.mask = roi.mask(:,:,1:skip:end);
+% % %dediffProbe.mask = dediffProbe.mask(:,:,2);
+% dediffProbe.sliceIndex = 20;
 
 % smooth image a little to avoid too many spurious regions when making masks
 if prior.imageSmoothingWidth
@@ -16,7 +25,7 @@ else
 end
 
 % fit Bayesian Gaussian mixture model using prior to soft-constrain the class statistics
-[gmm, prior] = fitBayesianGMM(prior);
+[gmm, prior] = fitBayesianGMM(prior, imForFitting, roi.mask, dediffProbe);
 % disp(' ')
 % disp(gmm.mu(:)')
 % disp(sqrt(gmm.Sigma(:))')
@@ -24,7 +33,7 @@ end
 % disp(' ')
 
 % get initial version of sub-region masks from gmm fit
-[masks,prob] = getMasksFromGMM(gmm);
+[masks,prob] = getMasksFromGMM(gmm, imForFitting, roi.mask, dediffProbe);
 % masks1 = masks(:,:,:,1);
 % masks2 = masks(:,:,:,2);
 % masks3 = masks(:,:,:,3);
@@ -63,21 +72,24 @@ k=0;
 % Sometimes regions in the dediff mask have HU that are too low and should
 % really be counted as myxoid or well diff
 
-% Use probe to define lower bound for dediff regions
-dediffThreshold = mean(dediffProbe.pixels) - prior.dediffThresholdFactor*std(dediffProbe.pixels);
-
-% Remove connected dediff regions whose mean HU is below this threshold
-masks(:,:,:,3) = removeConnectedComponentsBelowThreshold(masks(:,:,:,3), dediffThreshold, @mean);
-
-% Some low HU dediff areas are connected to OK HU areas so they survive the
-% previous step, but they are only just connected.
-% Erode dediff mask, remove components that are below threshold, then
-% dilate mask back to original size.
-if prior.removeOnlyJustConnectedComponents
-    SE = strel('disk', 4);
-    masks(:,:,:,3) = imerode(masks(:,:,:,3), SE);
+if ~isempty(dediffProbe)
+    % Use probe to define lower bound for dediff regions
+    dediffThreshold = mean(dediffProbe.pixels) - prior.dediffThresholdFactor*std(dediffProbe.pixels);
+    
+    % Remove connected dediff regions whose mean HU is below this threshold
     masks(:,:,:,3) = removeConnectedComponentsBelowThreshold(masks(:,:,:,3), dediffThreshold, @mean);
-    masks(:,:,:,3) = imdilate(masks(:,:,:,3), SE) & roi.mask;
+
+    % Some low HU dediff areas are connected to OK HU areas so they survive the
+    % previous step, but they are only just connected.
+    % Erode dediff mask, remove components that are below threshold, then
+    % dilate mask back to original size.
+    if prior.removeOnlyJustConnectedComponents
+        SE = strel('disk', 4);
+        masks(:,:,:,3) = imerode(masks(:,:,:,3), SE);
+        masks(:,:,:,3) = removeConnectedComponentsBelowThreshold(masks(:,:,:,3), dediffThreshold, @mean);
+        masks(:,:,:,3) = imdilate(masks(:,:,:,3), SE) & roi.mask;
+    end
+
 end
 
 % Switch connected regions of calcification mask that are below
@@ -279,89 +291,27 @@ end
         roi = rts.roi(roiKeys{notHole});
         roi.mask = logical(roi.mask);
 
-        % open file with dediff probe mask
-        rtsDediff = readDicomRT(fullfile(dediffRts.folder, dediffRts.name), sopInstMap);
+        if ~isempty(dediffRts)
+            % open file with dediff probe mask
+            rtsDediff = readDicomRT(fullfile(dediffRts.folder, dediffRts.name), sopInstMap);
+    
+            % get mask and stats
+            dediffProbe.pixels = rtsDediff.roi('dediff').im(logical(rtsDediff.roi('dediff').mask));
+    
+            dediffProbe.mask = rtsDediff.roi('dediff').mask;
+            for mm = 1:size(rtsDediff.roi('dediff').mask,3)
+                dediffProbe.sliceIndex(mm) = find(cell2mat(cellfunQ(@(x) strcmp(x, rtsDediff.roi('dediff').refSopInst{mm}), roi.refSopInst)));
+                % trim the dediff mask so it is totally within the lesion mask
+                dediffProbe.mask(:,:,mm) = dediffProbe.mask(:,:,mm) & roi.mask(:,:,dediffProbe.sliceIndex(mm));
+            end
 
-        % get mask and stats
-        dediffProbe.pixels = rtsDediff.roi('dediff').im(logical(rtsDediff.roi('dediff').mask));
-
-        % find slice index in main image volume that contains the dediff probe
-        [~, zSortIdx] = sort(cell2mat(arrayfunQ(@(x) x.z(1), rts.roi(roiKeys{notHole}).contour)));
-        refSopInst = arrayfunQ(@(x) x.ReferencedSOPInstanceUID{1}, rts.roi(roiKeys{notHole}).contour);
-        refSopInst = refSopInst(zSortIdx);
-        for mDd = 1:length(rtsDediff.roi('dediff').contour)
-            refSopInstDediff = rtsDediff.roi('dediff').contour(mDd).ReferencedSOPInstanceUID{1};
-            dediffProbe.sliceIndex(mDd) = find(cell2mat(cellfunQ(@(x) strcmp(x, refSopInstDediff), refSopInst)));
-            dediffProbe.mask(:,:,mDd) = rtsDediff.roi('dediff').contour(mDd).mask;
-        end
-    end
-
-    % Bayesian EM fitting function, with special data preparation and prior
-    % adjustments (if indicated)
-    function [gmm, prior] = fitBayesianGMM(prior)
-
-        data = imForFitting(roi.mask);
-
-        % crop pixels to hard limits to avoid influence of outliers
-        data = data(data > prior.signalLow);
-        data = data(data < prior.signalHigh);
-        pct = prctile(data, prior.dataPercentileThresholds);
-        data = data(data>=pct(1) & data<=pct(2));
-
-        % Use no more than 20000 pixels for the GMM fitting.  This is so that the
-        % power of the prior is similar for large and small ROIs
-        data = data(1:ceil(length(data)/20000):end);
-
-        % NaNs in the prior stats indicate these values should be set using
-        % the dediff prob statistics
-        if isnan(prior.mu_mu(2))
-            prior.mu_mu(2) = 0.5*(prior.mu_mu(1) + mean(dediffProbe.pixels));
-        end
-        if isnan(prior.mu_mu(3))
-            prior.mu_mu(3) = mean(dediffProbe.pixels);
-        end
-        if isnan(prior.sigma_mu(3))
-            prior.sigma_mu(3) = var(dediffProbe.pixels);
+        else
+            dediffProbe = [];
         end
 
-        % fit Bayesian EMM
-        gmm = kSeparatePriorsEMfunc(data, prior.mu_mu, prior.mu_sigma, prior.sigma_mu, prior.sigma_cov, prior.alpha, prior.sigmaLimits);
 
     end
 
-    function [masks, prob] = getMasksFromGMM(gmm)
-
-        % get class weights from dilated mask so we avoid edge effects when we smooth the wIm arrays later
-        lesionDilate = imdilate(roi.mask,strel('sphere',3));
-        [~,~,w] = cluster(gmm, imForFitting(lesionDilate));
-        
-        prob = zeros([size(roi.mask) 4]);
-        prob(repmat(lesionDilate,[1 1 1 4])) = w(:);
-        
-        % hard threshold on the dediff portion at this stage in the analysis
-        probDediff = prob(:,:,:,3);
-        probDediff(imForFitting < prctile(dediffProbe.pixels,1)) = 0;
-        prob(:,:,:,3) = probDediff;
-        
-        % apply a bit of smoothing, but more to dediff and none to calcifications
-        for nn = [1 2]
-            prob(:,:,:,nn) = imgaussfilt(prob(:,:,:,nn), 2);
-        end
-        % more smoothing for dediff region to encourge it to find simple blobs
-        prob(:,:,:,3) = imgaussfilt(prob(:,:,:,3), 5);
-        prob(prob<0) = 0;
-        prob = prob./sum(prob,4);
-        prob(~repmat(roi.mask,[1 1 1 4])) = 0;
-        
-        % get mask for each class
-        masks = false(size(prob));
-        wImMax = max(prob,[],4);
-        for nn = 1:4
-            masks(:,:,:,nn) = prob(:,:,:,nn) == wImMax;
-        end
-        masks = masks & roi.mask;
-
-    end
 
     function [thisMask, partsRemoved] = removeConnectedComponentsBelowThreshold(thisMask, threshold, averageFun)
 

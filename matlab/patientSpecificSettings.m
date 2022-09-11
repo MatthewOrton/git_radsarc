@@ -27,6 +27,16 @@ patientSettings('RMH_RSRC013') = myStruct('prior', thisPrior, 'minPixelCount_wel
 
 
 patientSettings('RMH_RSRC015') = myStruct('only_probe_dediff', true, 'fill_dediff', true, 'minPixelCount_welldiff_hole_fill_per_slice', 200, 'minPixelCount_myxoid_hole_fill_per_slice', 200);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-43; 6.9; 37; 333];
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu(:) = [14 9.3 12.2 178].^2;
+thisPrior.sigma_cov(1:4) = 0.0001;
+thisPrior.sigmaLimits.high(4) = 200^2;
+thisPrior.calcificationThreshold = 125;
+patientSettings('RMH_RSRC016') = myStruct('prior', thisPrior, 'minPixelCount_welldiff_hole_fill_per_slice', 100, 'minPixelCount_myxoid_hole_fill_per_slice', 100, 'minPixelCount_dediff_hole_fill_per_slice', 100);
+
 patientSettings('RMH_RSRC019') = myStruct('only_probe_dediff', true, 'fill_dediff', true, 'minPixelCount_welldiff_hole_fill_per_slice', 100, 'minPixelCount_myxoid_hole_fill_per_slice', 100);
 patientSettings('RMH_RSRC021') = myStruct('all_dediff', true);
 
@@ -224,24 +234,27 @@ patientSettings('RMH_RSRC087') = myStruct('only_probe_dediff', true, 'fill_dedif
 patientSettings('RMH_RSRC088') = myStruct('only_probe_dediff', true, 'fill_dediff', true);
 patientSettings('RMH_RSRC089') = myStruct('all_dediff', true);
 
-% try two versions for this one
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-500; -200; 56; 391];
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu(:) = [1 1 15.5 314].^2;
+thisPrior.sigma_cov(1:4) = 0.0001;
+thisPrior.sigmaLimits.high(4) = 500^2;
+thisPrior.calcificationThreshold = 140;
+patientSettings('RMH_RSRC091') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice_including_calcif', 50); %, 'merge_dediff_myxoid', true, 'minPixelCount_welldiff_hole_fill_per_slice', 200, 'minPixelCount_myxoid_hole_fill_per_slice', 1000, 'highThresholdWellDiffToMyxoid_per_slice',-95, 'merge_dediff_myxoid', true);
+
+
 thisPrior = defaultPrior;
 thisPrior.mu_mu(2) = -70;
 thisPrior.mu_sigma(2) = 0.1^2;
 thisPrior.sigma_mu(2) = 20^2;
 thisPrior.sigma_cov(2) = 0.001;
-%patientSettings('RMH_RSRC092') = myStruct('only_probe_dediff', true, 'convert_myxoid_to_welldiff', true);
 patientSettings('RMH_RSRC092') = myStruct('only_probe_dediff', true, 'number_largest_myxoid', 4, 'prior', thisPrior, 'minPixelCount_welldiff_hole_fill_per_slice', 200, 'minPixelCount_myxoid_hole_fill_per_slice', 200);
 
 
 patientSettings('RMH_RSRC094') = myStruct('all_dediff', true);
 
 
-% thisPrior = defaultPrior;
-% thisPrior.mu_mu(1) = -70;
-% thisPrior.mu_mu(2) = -20;
-% thisPrior.mu_mu(3) = 0;
-% thisPrior.mu_sigma(1:3) = 0.1^2;
 patientSettings('RMH_RSRC095') = myStruct('convert_myxoid_to_dediff', true, 'only_probe_dediff', true, 'minPixelCount_welldiff_hole_fill_per_slice', 400);
 
 thisPrior = defaultPrior;
@@ -339,6 +352,16 @@ patientSettings('RMH_RSRC133') = myStruct('prior', thisPrior, 'minPixelCount_ded
 patientSettings('RMH_RSRC134') = myStruct('all_dediff', true);
 patientSettings('RMH_RSRC135') = myStruct('only_probe_dediff', true, 'fill_dediff', true, 'minPixelCount_welldiff_hole_fill_per_slice', 100, 'minPixelCount_dediff_hole_fill_per_slice', 100);
 
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-28; 17; 53; 205];
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu(:) = [21 7 13 170].^2;
+thisPrior.sigma_cov(1:4) = 0.0001;
+thisPrior.sigmaLimits.high(4) = 500^2;
+thisPrior.calcificationThreshold = 100;
+patientSettings('RMH_RSRC136') = myStruct('prior', thisPrior, 'minPixelCount_welldiff_hole_fill_per_slice', 200, 'minPixelCount_myxoid_hole_fill_per_slice', 200, 'minPixelCount_dediff_hole_fill_per_slice', 200);
+
+
 thisPrior = defaultPrior; 
 thisPrior.mu_mu = [-82; -37; -1000; 180];
 thisPrior.mu_sigma(1:4) = 0.001^2;
@@ -419,13 +442,21 @@ thisPrior.alpha(1:4) = [1 1 1 1000];
 thisPrior.calcificationThreshold = 120;
 patientSettings('RMH_RSRC170') = myStruct('number_largest_dediff', 1, 'prior', thisPrior);
 
-
 thisPrior = defaultPrior;
 thisPrior.mu_mu = [-100; 41; 74; 200];
 thisPrior.mu_sigma(1:4) = 0.001^2;
 thisPrior.sigma_mu(:) = [1 14 11.5 12].^2;
 thisPrior.sigma_cov(1:4) = 0.0001;
 patientSettings('RMH_RSRC171') = myStruct('prior', thisPrior, 'minPixelCount_welldiff_hole_fill_per_slice', 100, 'minPixelCount_myxoid_hole_fill_per_slice', 100, 'minPixelCount_dediff_hole_fill_per_slice', 100, 'convert_welldiff_to_myxoid', true);
+
+thisPrior = defaultPrior; 
+thisPrior.mu_mu = [-96; -24; 31; 300];
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu(:) = [15 12 16.5 245].^2;
+thisPrior.sigma_cov(1:4) = 0.0001;
+thisPrior.sigmaLimits.high(4) = 500^2;
+thisPrior.calcificationThreshold = 70;
+patientSettings('RMH_RSRC172') = myStruct('prior', thisPrior, 'minPixelCount_welldiff_hole_fill_per_slice', 50);
 
 
 thisPrior = defaultPrior;
@@ -521,6 +552,7 @@ end
                      'minPixelCount_myxoid_hole_fill_per_slice', ...
                      'minPixelCount_myxoid_hole_fill_per_slice_including_calcif', ...
                      'minPixelCount_welldiff_hole_fill_per_slice_including_calcif', ...
+                     'minPixelCount_dediff_hole_fill_per_slice_including_calcif', ...
                      'maxImageValue_welldiff', ...
                      'lowThresholdMyxoidToWellDiff', ...
                      'highThresholdMyxoidToDeDiff_per_slice', ...

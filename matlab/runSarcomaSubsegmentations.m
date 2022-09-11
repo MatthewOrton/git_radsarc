@@ -14,7 +14,7 @@ tbl.Properties.VariableNames = regexprep(tbl.Properties.VariableNames, ' ', '_')
 
 maps = getSopInstMaps(false);
 
-regions = {'lesion', 'repro'}; %
+regions = {'lesion'}; % {'repro'};
 
 outputFolder = makeOutputFoldersCopyCode(regions);
 
@@ -25,8 +25,8 @@ for r = 1:length(regions)
     rtsFiles = dir(fullfile(rootFolder, sourceFolder, '*.dcm'));
     rtsFilesHere = arrayfunQ(@(x) x.name, rtsFiles);
     patIDs = cellfunQ(@(x) strsplitN(x, '__II__', 1), rtsFilesHere);
-    patIDs = {'RMH_RSRC072'};
-    
+    patIDs = {'RMH_RSRC179'};
+
     % default prior settings - may be overwridden by patientSpecificSettings()
     defaultPrior.mu_mu = [-80; -10; NaN; 200];
     defaultPrior.mu_sigma = [1 3 0.01 1].^2;
@@ -73,7 +73,7 @@ for r = 1:length(regions)
 
             patientSettingsHere = patientSettings(patIDs{nRts});
 
-            [masks, roi, dediffProbe, prior, gmm] = sarcomaSubsegmentor(thisLesionRts, onlyLoadData, dediffRts, maps.sopInstMap, patientSettingsHere.prior, showProgressBar);
+            [masks, roi, dediffProbe, prior, gmm, vesselMask] = sarcomaSubsegmentor(thisLesionRts, onlyLoadData, dediffRts, maps.sopInstMap, patientSettingsHere.prior, showProgressBar);
             if onlyLoadData
                 masks(:) = false;
                 maskInd = [strcmp(tbl.low_enhancing{tblRow},'x') ...
@@ -110,7 +110,12 @@ for r = 1:length(regions)
             save(strrep(outputFilename,'ext','mat'), 'rtsFileName', 'masks', 'im', 'gmm', 'prior')
 
             % save as seg file
-            packageAndWriteDicomSeg('lesion_four_subregions', roi, masks, outputFilename, maps);
+            if strcmp(regions{r},'lesion')
+                StructureSetLabel = 'lesion_four_subregions';
+            elseif strcmp(regions{r},'repro')
+                StructureSetLabel = 'lesion_repro_four_subregions';
+            end
+            packageAndWriteDicomSeg(StructureSetLabel, roi, masks, vesselMask, outputFilename, maps);
 
             disp(' ')
 
@@ -127,7 +132,7 @@ end
 diary off
 
 %%%%%%%%%%%%%%%
-    function packageAndWriteDicomSeg(structureSetLabel, roi, masks, outputFilename, maps)
+    function packageAndWriteDicomSeg(structureSetLabel, roi, masks, vesselMask, outputFilename, maps)
 
     fprintf('Writing DICOM SEG file ...')
 
@@ -143,6 +148,13 @@ diary off
         end
     end
 
+    if nnz(vesselMask)>0
+        packageSubRegions{5} = packageLesion;
+        for nSlice = 1:size(masks,3)
+            packageSubRegions{5}(nSlice).mask = double(vesselMask(:,:,nSlice) & roi.mask(:,:,nSlice));
+        end
+    end
+
 
     % package up all masks into one cell array/structure
     package{1} = struct('data', packageLesion, 'label', 'lesion');
@@ -150,6 +162,9 @@ diary off
     package{3} = struct('data', packageSubRegions{2}, 'label', 'mid enhancing');
     package{4} = struct('data', packageSubRegions{3}, 'label', 'high enhancing');
     package{5} = struct('data', packageSubRegions{4}, 'label', 'calcification');
+    if nnz(vesselMask)>0
+        package{6} = struct('data', packageSubRegions{5}, 'label', 'vessels');
+    end
 
     segFileName = strrep(outputFilename, 'ext', 'seg');
     segFileName = strrep(segFileName,'.seg','_SEG_sarcoma.dcm');
@@ -658,6 +673,28 @@ diary off
             maskWellDiff(pixelIdx) = true;
             masksHere(:,:,mm,1) = maskWellDiff;
             for kk = 2:4
+                thisMask = masksHere(:,:,mm,kk);
+                thisMask(pixelIdx) = false;
+                masksHere(:,:,mm,kk) = thisMask;
+            end
+        end
+
+    end
+
+    % fill small holes in dediff
+    if patSet.minPixelCount_dediff_hole_fill_per_slice_including_calcif
+
+        for mm = 1:size(masksHere,3)
+            maskDediff = masksHere(:,:,mm,3);
+            maskDediffHoles = getMaskHolesAgainstBackground(maskDediff, roi.mask(:,:,mm));
+            maskDediffHoles = maskDediffHoles | getMaskHolesAgainstBackground(maskDediff, masksHere(:,:,mm,1));
+            maskDediffHoles = maskDediffHoles | getMaskHolesAgainstBackground(maskDediff, masksHere(:,:,mm,2));
+            CC = bwconncomp(maskDediffHoles);
+            idx = cell2mat(cellfunQ(@(x) length(x)<patSet.minPixelCount_dediff_hole_fill_per_slice_including_calcif, CC.PixelIdxList));
+            pixelIdx = cell2mat(CC.PixelIdxList(idx)');
+            maskDediff(pixelIdx) = true;
+            masksHere(:,:,mm,3) = maskDediff;
+            for kk = [1 2 4]
                 thisMask = masksHere(:,:,mm,kk);
                 thisMask(pixelIdx) = false;
                 masksHere(:,:,mm,kk) = thisMask;

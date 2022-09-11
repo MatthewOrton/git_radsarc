@@ -1,7 +1,7 @@
 import sys
 sys.path.append('/Users/morton/Documents/GitHub/icrpythonradiomics')
 
-import os, glob
+import os, glob, shutil, inspect
 from getSopInstDict import getSopInstDict
 from radiomicAnalyser import radiomicAnalyser
 from subprocess import call
@@ -25,9 +25,14 @@ project["inputPath"] = '/Users/morton/Dicom Files/RADSARC_R/XNAT'
 project["assessorStyle"] = {"type": "SEG", "format": "DCM"}
 project["roiObjectLabelFilter"] = ''
 project["paramFileName"] = standardParamFile
-project["outputPath"] = os.path.join(project["inputPath"], 'roiThumbnails')
-
 project["outputPath"] = os.path.join(project["inputPath"], 'extractions', 'extractions__' + strftime("%Y%m%d_%H%M", localtime()))
+
+# copy all code including this file - N.B. add any more local modules to list if needed
+os.makedirs(os.path.join(project["outputPath"],'code'))
+modulesToCopy = [getSopInstDict, radiomicAnalyser]
+[shutil.copyfile(inspect.getfile(x), os.path.join(project['outputPath'], 'code', os.path.split(inspect.getfile(x))[1])) for x in modulesToCopy]
+shutil.copyfile(__file__, os.path.join(project["outputPath"], 'code', os.path.split(__file__)[1]))
+
 
 thumbnailPathStr = 'roiThumbnails'
 
@@ -60,47 +65,62 @@ for n, assessor in enumerate(assessors):
         radAn.sopInstDict = sopInstDict
         radAn.extraDictionaries = extraDictionaries
 
-        # computation order is important:
-        #       calcification first as we don't use any resampling and only compute shape/first-order features
-        #       lesion last as this ROI always exists and the call to computeRadiomicsFeatures sets certain variables
+        radAn.roiObjectLabelFilter = 'lesion'
+        radAn.loadImageData(includeContiguousEmptySlices=True)
 
-        computeCalcification = False
-        if computeCalcification:
-            radAn.paramFileName = calcificationParamFile
-            radAn.roiObjectLabelFilter = 'calcification'
-            warningMessage = radAn.loadImageData(includeContiguousEmptySlices=True)
-            radAn.createMask()
-            if np.sum(radAn.mask)>0:
-                radAn.computeRadiomicFeatures(featureKeyPrefixStr='calcification_')
+        # 'lesion' should be last so that the radiomics features are computed from this
+        regions = ['low enhancing', 'mid enhancing', 'high enhancing','calcification', 'vessels', 'lesion']
+        masks = {}
+        for region in regions:
+            radAn.roiObjectLabelFilter = region
+            # only one patient has 'vessels' ROI, so need to check it ROI exists first
+            if len(radAn._radiomicAnalyser__getReferencedUIDs())>0:
+                radAn.loadImageData(includeContiguousEmptySlices=True)
+                radAn.createMask()
+                masks[region] = copy.deepcopy(radAn.mask)
 
         # set to the standard parameter file
         radAn.paramFileName = standardParamFile
 
-        for subRegion in ['lesion']: #'high','mid','low',
+        # use all pixels
+        radAn.computeRadiomicFeatures(featureKeyPrefixStr='lesion_')
 
-            radAn.roiObjectLabelFilter = subRegion
-            warningMessage = radAn.loadImageData(includeContiguousEmptySlices=True)
-            radAn.createMask()
+        # features so we can make null dictionary when sub-region not present
+        featureKeys = [key.replace('lesion_','') for key in radAn.featureVector.keys() if 'lesion_original' in key]
 
-            if np.sum(radAn.mask)>0:
+        # remove calcifications or vessels
+        radAn.mask = np.logical_and(radAn.mask==1, np.logical_not(masks['calcification']==1)).astype(float)
+        if 'vessels' in masks:
+            radAn.mask = np.logical_and(radAn.mask==1, np.logical_not(masks['vessels']==1)).astype(float)
+        radAn.computeRadiomicFeatures(featureKeyPrefixStr='lesion_calcificationDeleted_')
 
-                if saveThumbnails:
-                    showMaskBoundary = True
-                    showContours = False
-                    showMaskHolesWithNewColour = True
-                    vmin = -135
-                    vmax = 215
-                    thumbnail = radAn.saveThumbnail(vmin=vmin, vmax=vmax, showMaskBoundary=showMaskBoundary, showHistogram=False, linewidth=0.04, pathStr=thumbnailPathStr, warningMessage=sopInstDictWarning)
-                    thumbnailFiles.append(thumbnail["fileName"])
+        for region in regions[0:-3]:
+            radAn.mask = copy.deepcopy(masks[region])
+            regionStr = region.replace(' ', '_')
+            if np.sum(masks[region])>0:
+                radAn.computeRadiomicFeatures(featureKeyPrefixStr=regionStr + '_')
 
-                featurePrefixStr = subRegion
+                # remove the non-essential keys from this extraction.  This is because when a sub-region is not present
+                # we still need to include the features in the output (but the feature values will be empty strings) so that
+                # every patient has the same total list of features, irrespective of which sub-regions are present
 
+                # get list of all keys associated with this region
+                regionFeatureKeys = [key for key in radAn.featureVector.keys() if regionStr in key]
+                # get the feature keys that we want to keep
+                regionFeatureKeysKeep = [regionStr + '_' + x for x in featureKeys]
+                regionFeatureKeysDelete = list(set(regionFeatureKeys) - set(regionFeatureKeysKeep))
+                # remove the non-essential keys - the remaining keys should match what would be done with the default code below
+                for key in regionFeatureKeysDelete:
+                    radAn.featureVector.pop(key)
 
-                for spacing in [2.5]: #[1, 2.5, 5, 10]
-                    radAn.computeRadiomicFeatures(resampledPixelSpacing=[spacing, spacing, spacing], featureKeyPrefixStr=featurePrefixStr + '_spacing' + str(spacing) + '_')
-                                                  # binWidthOverRide=None, binCountOverRide=None, binEdgesOverRide=None,
-                                                  # gldm_aOverRide=None, distancesOverRide=None,
-                                                  # computeEntropyOfCounts=False
+            else:
+                # default, with empty strings
+                for key in featureKeys:
+                    radAn.featureVector[region.replace(' ','_') + '_' + key] = ''
+
+        for region in regions[0:-2]:
+            volumeFraction = np.sum(masks[region])/np.sum(masks['lesion'])
+            radAn.featureVector['lesion_sarcomaFeature_' + region + 'VolumeFraction'] = volumeFraction
 
         resultsFiles.append(radAn.saveResult())
 

@@ -1,7 +1,7 @@
-function [masks, roi, dediffProbe, prior, gmm] = sarcomaSubsegmentor(rtsFile, onlyLoadData, dediffRts, sopInstMap, prior, showProgressBar)
+function [masks, roi, dediffProbe, prior, gmm, vesselMask] = sarcomaSubsegmentor(rtsFile, onlyLoadData, dediffRts, sopInstMap, prior, showProgressBar)
 
 % load image and mask and dediff probe
-[roi, dediffProbe] = loadData;
+[roi, dediffProbe, vesselMask] = loadData;
 
 if onlyLoadData
     masks = repmat(roi.mask,[1 1 1 4]);
@@ -10,10 +10,10 @@ if onlyLoadData
     return
 end
 
+% skip = 2; roi.im = roi.im(:,:,1:skip:end); roi.mask = roi.mask(:,:,1:skip:end);
+
 % smoothedThreshold(roi.im, [-200 200], roi.mask); return
 
-% skip = 5;
-% roi.im = roi.im(:,:,1:skip:end); roi.mask = roi.mask(:,:,1:skip:end);
 % % %dediffProbe.mask = dediffProbe.mask(:,:,2);
 % dediffProbe.sliceIndex = 20;
 
@@ -265,7 +265,7 @@ end
     end
 
     % Main data loading function
-    function [roi, dediffProbe] = loadData()
+    function [roi, dediffProbe, vesselMask] = loadData()
 
         % open main rts file
         rts = readDicomRT(fullfile(rtsFile.folder, rtsFile.name), sopInstMap);
@@ -273,7 +273,8 @@ end
         % find any ROIs with 'hole' in the label
         roiKeys = rts.roi.keys;
         holes = cell2mat(cellfunQ(@(x) contains(x,'hole'), roiKeys));
-        notHole = find(~holes);
+        vessels = cell2mat(cellfunQ(@(x) contains(x,'vessels'), roiKeys));
+        notHole = find(~holes & ~vessels);
         holes = find(holes);
     
         % remove any holes from mask
@@ -290,6 +291,18 @@ end
         end
         roi = rts.roi(roiKeys{notHole});
         roi.mask = logical(roi.mask);
+
+        % find any ROIs called 'vessels'
+        vesselMask = false(size(roi.mask));
+        if rts.roi.isKey('vessels')
+            thisRoi = rts.roi('vessels');
+            lesionRoi = rts.roi(roiKeys{notHole});
+            for nn = 1:length(thisRoi.refSopInst)
+                sliceIdx = find(cell2mat(cellfunQ(@(x) strcmp(x, thisRoi.refSopInst{nn}), lesionRoi.refSopInst)));
+                vesselMask(:,:,sliceIdx) = thisRoi.mask(:,:,nn);
+            end
+        end
+
 
         if ~isempty(dediffRts)
             % open file with dediff probe mask

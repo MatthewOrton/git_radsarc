@@ -36,9 +36,9 @@ assessorFolder = 'assessors_' + strftime("%Y.%m.%d_%H.%M.%S", localtime())
 # #     os.remove(assessorDelete[0])
 # #
 # after downloading this section the repro assessors will be in the same folder, so delete repro assessors from lesion folder after completing download
-roiCollectionLabelFilter = 'lesion_repro'
+roiCollectionLabelFilter = 'lesion'
 xu.roiCollectionLabelFilter = roiCollectionLabelFilter
-xu.downloadAssessors_Project(destinFolder=os.path.join('assessors',assessorFolder, roiCollectionLabelFilter), subjectList=['RMH_RSRC072'])
+xu.downloadAssessors_Project(destinFolder=os.path.join('assessors',assessorFolder, roiCollectionLabelFilter), subjectList=['RMH_RSRC179'])
 #
 # # this is a special case where there may be an assessor for patID = 145 which has been excluded, so delete here
 # assessorDelete = glob.glob(os.path.join(downloadPath, 'assessors', assessorFolder, roiCollectionLabelFilter, 'RMH_RSRC145*.dcm'))

@@ -21,4 +21,4 @@ xu = xnatDownloader(serverURL = serverURL,
 
 assessorFolder = 'assessors_SEG_' + strftime("%Y.%m.%d_%H.%M.%S", localtime())
 
-xu.downloadAssessors_Project(destinFolder=os.path.join('assessors', assessorFolder), subjectList=['RMH_RSRC020', 'RMH_RSRC110'])
+xu.downloadAssessors_Project(destinFolder=os.path.join('assessors', assessorFolder), subjectList = ['RMH_RSRC179'])

@@ -11,7 +11,9 @@ import os, warnings, copy, sys
 import matplotlib.pyplot as plt
 import dill
 
-sys.path.append('/Users/adminehann/Documents/Matt/git/icrpythonradiomics/machineLearning')
+user = os.path.expanduser("~")
+
+sys.path.append(os.path.join(user, 'Documents/git/git_icrpythonradiomics/machineLearning'))
 from featureSelection import featureSelection_correlation, featureSelection_groupName
 
 # function to make group strings easier to read

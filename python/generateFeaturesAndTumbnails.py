@@ -36,8 +36,15 @@ shutil.copyfile(__file__, os.path.join(project["outputPath"], 'code', os.path.sp
 
 thumbnailPathStr = 'roiThumbnails'
 
-assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_SEG_2022.09.02_00.02.25', '*.dcm'))
+# all patients
+# assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_SEG_2022.09.02_00.02.25', '*.dcm'))
+
+# repro patients
+assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_SEG_2022.09.06_21.24.49', '*.dcm'))
+
 assessors.sort()
+
+assessors = [assessors[11]]
 
 thumbnailFiles = []
 resultsFiles = []
@@ -97,7 +104,8 @@ for n, assessor in enumerate(assessors):
         for region in regions[0:-3]:
             radAn.mask = copy.deepcopy(masks[region])
             regionStr = region.replace(' ', '_')
-            if np.sum(masks[region])>0:
+            # PatientID 074 has one pixel in the low-enhancing mask and PatientID 099 has 3 pixels in the mid-enhancing mask.  If statement ensures we don't compute features for these cases.
+            if np.sum(masks[region])>3:
                 radAn.computeRadiomicFeatures(featureKeyPrefixStr=regionStr + '_')
 
                 # remove the non-essential keys from this extraction.  This is because when a sub-region is not present

@@ -14,7 +14,7 @@ tbl.Properties.VariableNames = regexprep(tbl.Properties.VariableNames, ' ', '_')
 
 maps = getSopInstMaps(false);
 
-regions = {'lesion'}; % {'repro'};
+regions = {'repro'}; %{'lesion'}; % ;
 
 outputFolder = makeOutputFoldersCopyCode(regions);
 
@@ -25,7 +25,7 @@ for r = 1:length(regions)
     rtsFiles = dir(fullfile(rootFolder, sourceFolder, '*.dcm'));
     rtsFilesHere = arrayfunQ(@(x) x.name, rtsFiles);
     patIDs = cellfunQ(@(x) strsplitN(x, '__II__', 1), rtsFilesHere);
-    patIDs = {'RMH_RSRC179'};
+    patIDs = {'RMH_RSRC068'};
 
     % default prior settings - may be overwridden by patientSpecificSettings()
     defaultPrior.mu_mu = [-80; -10; NaN; 200];

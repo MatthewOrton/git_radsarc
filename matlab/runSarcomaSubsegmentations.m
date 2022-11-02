@@ -56,11 +56,7 @@ for r = 1:length(regions)
     % values for remaining patients.
     patientSettings = patientSpecificSettings(patIDs, defaultPrior);
 
-    for nRts =  1:30  %1:length(patIDs)
-
-        if nRts==3
-            disp('NOT READY!!')
-        end
+    for nRts =  1:50  %1:length(patIDs)
 
         disp(patIDs{nRts})
         try
@@ -888,6 +884,16 @@ diary off
 
     end
 
+    if patSet.calcificationSliceRange
+        maskDediff = masksHere(:,:,:,3);
+        maskCalc = masksHere(:,:,:,4);
+        maskCalcRemove = maskCalc;
+        maskCalcRemove(:,:,patSet.calcificationSliceRange) = false;
+        maskCalc(maskCalcRemove) = false;
+        maskDediff(maskCalcRemove) = true;
+        masksHere(:,:,:,3) = maskDediff;
+        masksHere(:,:,:,4) = maskCalc;
+    end
 
 
     end

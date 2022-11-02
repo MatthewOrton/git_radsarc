@@ -14,18 +14,24 @@ tbl.Properties.VariableNames = regexprep(tbl.Properties.VariableNames, ' ', '_')
 
 maps = getSopInstMaps(false);
 
-regions = {'repro'}; %{'lesion'}; % ;
+regions = {'lesion'}; % {'repro'};
 
 outputFolder = makeOutputFoldersCopyCode(regions);
 
 for r = 1:length(regions)
 
     % get list of patient IDs
-    sourceFolder = fullfile('assessors', 'assessors_2022.09.01_11.19.46', regions{r});
+
+    % training data:
+%     sourceFolder = fullfile('assessors', 'assessors_2022.09.01_11.19.46', regions{r});
+    
+    % test data:
+    sourceFolder = fullfile('assessors', 'assessors_2022.10.20_18.50.40', regions{r});
+
     rtsFiles = dir(fullfile(rootFolder, sourceFolder, '*.dcm'));
     rtsFilesHere = arrayfunQ(@(x) x.name, rtsFiles);
     patIDs = cellfunQ(@(x) strsplitN(x, '__II__', 1), rtsFilesHere);
-    patIDs = {'RMH_RSRC068'};
+    %patIDs = {'RMH_RSRC068'};
 
     % default prior settings - may be overwridden by patientSpecificSettings()
     defaultPrior.mu_mu = [-80; -10; NaN; 200];
@@ -38,6 +44,7 @@ for r = 1:length(regions)
     defaultPrior.dediffThresholdFactor = 1.5;
     defaultPrior.dataPercentileThresholds = [0.5 99.5];
     defaultPrior.calcificationThreshold = 190;
+    defaultPrior.calcificationThresholdStatistic = @median;
     defaultPrior.apply2Dtidying = false;
     defaultPrior.signalLow = -200;
     defaultPrior.signalHigh = 350;
@@ -49,14 +56,18 @@ for r = 1:length(regions)
     % values for remaining patients.
     patientSettings = patientSpecificSettings(patIDs, defaultPrior);
 
-    for nRts = 1:length(patIDs)
+    for nRts =  1:30  %1:length(patIDs)
+
+        if nRts==3
+            disp('NOT READY!!')
+        end
 
         disp(patIDs{nRts})
         try
 
             tblRow = find(cell2mat(cellfunQ(@(x) strcmp(x, patIDs{nRts}), tbl.Patient_ID)));
 
-            if isempty(tbl.("First_round_sub-seg"){tblRow}) && (tbl.("number_of_sub-regions")(tblRow) == 1)
+            if ~isempty(tblRow) && isempty(tbl.("First_round_sub-seg"){tblRow}) && (tbl.("number_of_sub-regions")(tblRow) == 1)
                 disp('Only one sub-region')
                 disp(' ')
                 onlyLoadData = true;
@@ -74,6 +85,7 @@ for r = 1:length(regions)
             patientSettingsHere = patientSettings(patIDs{nRts});
 
             [masks, roi, dediffProbe, prior, gmm, vesselMask] = sarcomaSubsegmentor(thisLesionRts, onlyLoadData, dediffRts, maps.sopInstMap, patientSettingsHere.prior, showProgressBar);
+
             if onlyLoadData
                 masks(:) = false;
                 maskInd = [strcmp(tbl.low_enhancing{tblRow},'x') ...
@@ -97,7 +109,7 @@ for r = 1:length(regions)
             outputFilename = fullfile(outputFolder, regions{r}, 'ext', strrep(thisLesionRts.name,'.dcm','.ext'));
 
             % save pdf and fig files
-            saveFigFile = true;
+            saveFigFile = false;
             writeThumbnailImage(outputFilename, thisLesionRts, saveFigFile);
 
             % save matlab variables
@@ -115,7 +127,7 @@ for r = 1:length(regions)
             elseif strcmp(regions{r},'repro')
                 StructureSetLabel = 'lesion_repro_four_subregions';
             end
-            packageAndWriteDicomSeg(StructureSetLabel, roi, masks, vesselMask, outputFilename, maps);
+%             packageAndWriteDicomSeg(StructureSetLabel, roi, masks, vesselMask, outputFilename, maps);
 
             disp(' ')
 
@@ -497,6 +509,14 @@ diary off
         masksHere(:,:,:,3) = maskDediff;
     end
 
+    % post-process to make whole mask well diff
+    if patSet.all_welldiff
+        maskWelldiff = any(masksHere,4);
+        masksHere(:) = false;
+        masksHere(:,:,:,1) = maskWelldiff;
+    end
+
+    
     % turn well diff to myxoid
     if patSet.convert_welldiff_to_myxoid
         maskWellDiff = masksHere(:,:,:,1);
@@ -576,6 +596,23 @@ diary off
 
     end
 
+
+    % switch small well-diff regions to myxoid
+    if patSet.minPixelCount_calc_to_dediff_per_slice
+
+        for mm = 1:size(masksHere,3)
+            maskCalc = masksHere(:,:,mm,4);
+            maskDediff = masksHere(:,:,mm,3);
+            CC = bwconncomp(maskCalc);
+            idx = cell2mat(cellfunQ(@(x) length(x)<patSet.minPixelCount_calc_to_dediff_per_slice, CC.PixelIdxList));
+            pixelIdx = cell2mat(CC.PixelIdxList(idx)');
+            maskCalc(pixelIdx) = false;
+            maskDediff(pixelIdx) = true;
+            masksHere(:,:,mm,3) = maskDediff;
+            masksHere(:,:,mm,4) = maskCalc;
+        end
+
+    end
 
     % switch small myxoid regions to well-diff
     if patSet.minPixelCount_myxoid_to_welldiff_per_slice

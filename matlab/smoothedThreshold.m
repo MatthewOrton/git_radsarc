@@ -22,7 +22,7 @@ function varargout = smoothedThreshold(varargin)
 
 % Edit the above text to modify the response to help smoothedThreshold
 
-% Last Modified by GUIDE v2.5 18-Aug-2022 22:21:53
+% Last Modified by GUIDE v2.5 01-Nov-2022 12:25:59
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -182,12 +182,37 @@ limits = handles.figure1.UserData.CLim;
 t1 = limits(1) + (limits(2)-limits(1))*handles.slider1.Value;
 t2 = limits(1) + (limits(2)-limits(1))*handles.slider2.Value;
 t3 = limits(1) + (limits(2)-limits(1))*handles.slider3.Value;
+t3x = limits(1) + (limits(2)-limits(1))*handles.slider5.Value;
 
-imVol = handles.figure1.UserData.imageSmoothed;
-masks(:,:,:,1) = imVol < t1 & maskVol;
-masks(:,:,:,2) = imVol >= t1 & imVol < t2 & maskVol;
-masks(:,:,:,3) = imVol >= t2 & imVol < t3 & maskVol;
-masks(:,:,:,4) = imVol >= t3 & maskVol;
+handles.text14.String = num2str(t1);
+handles.text15.String = num2str(t2);
+handles.text16.String = num2str(t3);
+handles.text17.String = num2str(t3x);
+
+imVolSm = handles.figure1.UserData.imageSmoothed;
+% don't use smoothed image for calcification
+maskCalc = imVol >= t3 & maskVol;
+
+% remove connected components where the median is less than the slider
+% value
+CC = bwconncomp(maskCalc,4);
+idx = cell2mat(cellfunQ(@(x) prctile(imVol(x),50)<t3x, CC.PixelIdxList));
+pixelIdx = cell2mat(CC.PixelIdxList(idx)');
+maskCalc(pixelIdx) = false;
+
+% remove connected components that are too small
+CC = bwconncomp(maskCalc,4);
+idx = cell2mat(cellfunQ(@(x) length(x)<=10, CC.PixelIdxList));
+pixelIdx = cell2mat(CC.PixelIdxList(idx)');
+maskCalc(pixelIdx) = false;
+
+
+masks(:,:,:,1) = imVolSm < t1 & maskVol & ~maskCalc;
+masks(:,:,:,2) = imVolSm >= t1 & imVolSm < t2 & maskVol & ~maskCalc;
+masks(:,:,:,3) = imVolSm >= t2 & maskVol & ~maskCalc;
+masks(:,:,:,4) = maskCalc;
+
+
 
 segVol = sum(masks.*reshape([1 2 3 4],[1 1 1 4]),4);
 segVol(~maskVol) = 0;
@@ -261,6 +286,112 @@ updateMask(handles)
 % --- Executes during object creation, after setting all properties.
 function slider4_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to slider4 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: slider controls usually have a light gray background.
+if isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor',[.9 .9 .9]);
+end
+
+
+% --- Executes when user attempts to close figure1.
+function figure1_CloseRequestFcn(hObject, eventdata, handles)
+% hObject    handle to figure1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+if strcmp(handles.text1.String, 'NaN')
+    handles.text1.String = '-500';
+end
+
+if strcmp(handles.text2.String, 'NaN')
+    handles.text2.String = '1';
+end
+
+if strcmp(handles.text7.String, 'NaN')
+    handles.text7.String = '500';
+end
+
+if strcmp(handles.text8.String, 'NaN')
+    handles.text8.String = '1';
+end
+
+disp('')
+disp('thisPrior = defaultPrior;')
+disp(['thisPrior.mu_mu = [' num2str(handles.text1.String) '; ' ...
+                            num2str(handles.text3.String) '; ' ...
+                            num2str(handles.text5.String) '; ' ...
+                            num2str(handles.text7.String) ']; % ' ...
+                            num2str(handles.text14.String) ', ' ...
+                            num2str(handles.text15.String) ', ' ...
+                            num2str(handles.text16.String) ', ' ...
+                            num2str(handles.text17.String)])
+disp('thisPrior.mu_sigma(1:4) = 0.001^2;')
+disp(['thisPrior.sigma_mu = [' num2str(handles.text2.String) '; ' num2str(handles.text4.String) '; ' num2str(handles.text6.String) '; ' num2str(handles.text8.String) '];'])
+disp('thisPrior.sigma_cov(1:4) = 0.0001;')
+disp('')
+
+% Hint: delete(hObject) closes the figure
+delete(hObject);
+
+
+% --------------------------------------------------------------------
+function Untitled_1_Callback(hObject, eventdata, handles)
+% hObject    handle to Untitled_1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --- Executes on button press in pushbutton1.
+function pushbutton1_Callback(hObject, eventdata, handles)
+% hObject    handle to pushbutton1 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+limits = handles.figure1.UserData.CLim;
+
+t3 = limits(1) + (limits(2)-limits(1))*handles.slider3.Value;
+
+imVol = handles.figure1.UserData.image;
+maskVol = handles.figure1.UserData.mask;
+calcMask = imVol >= t3 & maskVol;
+
+CC = bwconncomp(calcMask ,8);
+
+idxGt1 = cell2mat(cellfunQ(@(x) length(x)>1, CC.PixelIdxList));
+
+regionMedian = cell2mat(cellfunQ(@(x) median(imVol(x)), CC.PixelIdxList(idxGt1)));
+region10pct = cell2mat(cellfunQ(@(x) prctile(imVol(x),10), CC.PixelIdxList(idxGt1)));
+region90pct = cell2mat(cellfunQ(@(x) prctile(imVol(x),90), CC.PixelIdxList(idxGt1)));
+
+[regionMedian, idx] = sort(regionMedian);
+region10pct = region10pct(idx);
+region90pct = region90pct(idx);
+
+figure;
+plot(regionMedian)
+hold on
+plot(region10pct)
+PreviousColor
+plot(region90pct)
+
+
+% --- Executes on slider movement.
+function slider5_Callback(hObject, eventdata, handles)
+% hObject    handle to slider5 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'Value') returns position of slider
+%        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+
+updateMask(handles)
+
+
+% --- Executes during object creation, after setting all properties.
+function slider5_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to slider5 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    empty - handles not created until after all CreateFcns called
 

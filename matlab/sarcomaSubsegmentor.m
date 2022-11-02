@@ -10,9 +10,7 @@ if onlyLoadData
     return
 end
 
-% skip = 2; roi.im = roi.im(:,:,1:skip:end); roi.mask = roi.mask(:,:,1:skip:end);
-
-% smoothedThreshold(roi.im, [-200 200], roi.mask); return
+% skip = ceil(size(roi.im,3)/14); roi.im = roi.im(:,:,1:skip:end); roi.mask = roi.mask(:,:,1:skip:end); smoothedThreshold(roi.im, [-200 200], roi.mask); return
 
 % % %dediffProbe.mask = dediffProbe.mask(:,:,2);
 % dediffProbe.sliceIndex = 20;
@@ -77,7 +75,7 @@ if ~isempty(dediffProbe)
     dediffThreshold = mean(dediffProbe.pixels) - prior.dediffThresholdFactor*std(dediffProbe.pixels);
     
     % Remove connected dediff regions whose mean HU is below this threshold
-    masks(:,:,:,3) = removeConnectedComponentsBelowThreshold(masks(:,:,:,3), dediffThreshold, @mean);
+    masks(:,:,:,3) = removeConnectedComponentsBelowThreshold(masks(:,:,:,3), dediffThreshold, @mean, 8);
 
     % Some low HU dediff areas are connected to OK HU areas so they survive the
     % previous step, but they are only just connected.
@@ -86,7 +84,7 @@ if ~isempty(dediffProbe)
     if prior.removeOnlyJustConnectedComponents
         SE = strel('disk', 4);
         masks(:,:,:,3) = imerode(masks(:,:,:,3), SE);
-        masks(:,:,:,3) = removeConnectedComponentsBelowThreshold(masks(:,:,:,3), dediffThreshold, @mean);
+        masks(:,:,:,3) = removeConnectedComponentsBelowThreshold(masks(:,:,:,3), dediffThreshold, @mean, 8);
         masks(:,:,:,3) = imdilate(masks(:,:,:,3), SE) & roi.mask;
     end
 
@@ -94,7 +92,7 @@ end
 
 % Switch connected regions of calcification mask that are below
 % calcificationThreshold to dediff
-[masks(:,:,:,4), calcifRemoved] = removeConnectedComponentsBelowThreshold(masks(:,:,:,4), prior.calcificationThreshold, @median);
+[masks(:,:,:,4), calcifRemoved] = removeConnectedComponentsBelowThreshold(masks(:,:,:,4), prior.calcificationThreshold, prior.calcificationThresholdStatistic, 4);
 % just these three lines might be controversial...
 maskDediff = masks(:,:,:,3);
 maskDediff(calcifRemoved) = true;
@@ -326,9 +324,9 @@ end
     end
 
 
-    function [thisMask, partsRemoved] = removeConnectedComponentsBelowThreshold(thisMask, threshold, averageFun)
+    function [thisMask, partsRemoved] = removeConnectedComponentsBelowThreshold(thisMask, threshold, averageFun, connectivity)
 
-        CC = bwconncomp(thisMask ,8);
+        CC = bwconncomp(thisMask, connectivity);
         CCmean = cell2mat(cellfunQ(@(x) averageFun(imForFitting(x)), CC.PixelIdxList));
         partsRemoved = false(size(thisMask));
         thisMask(cell2mat(CC.PixelIdxList(CCmean < threshold)')) = false;

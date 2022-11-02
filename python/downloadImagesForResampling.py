@@ -21,9 +21,7 @@ xu = xnatDownloader(serverURL = serverURL,
 
 scanList = []
 
-scanList.append(['20190209_140000_SOMATOM', '2'])
-scanList.append(['20190509_102500_LightSpeed', '604'])
-scanList.append(['20200612_144000_Aquilion', '4'])
+scanList.append(['Visit_01_20160426', '2'])
 
 xu.scanList_downloadScans(scanList, destinFolder='scans_' + strftime("%Y.%m.%d_%H.%M.%S", localtime()) + '/originals')
 

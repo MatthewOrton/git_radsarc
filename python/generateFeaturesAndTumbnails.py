@@ -32,7 +32,7 @@ os.makedirs(os.path.join(project["outputPath"],'code'))
 modulesToCopy = [getSopInstDict, radiomicAnalyser]
 [shutil.copyfile(inspect.getfile(x), os.path.join(project['outputPath'], 'code', os.path.split(inspect.getfile(x))[1])) for x in modulesToCopy]
 shutil.copyfile(__file__, os.path.join(project["outputPath"], 'code', os.path.split(__file__)[1]))
-
+shutil.copyfile(project["paramFileName"], os.path.join(project["outputPath"], 'code', os.path.split(project["paramFileName"])[1]))
 
 thumbnailPathStr = 'roiThumbnails'
 

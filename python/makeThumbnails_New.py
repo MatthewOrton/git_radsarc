@@ -7,12 +7,10 @@ from saveThumbnail import saveThumbnail
 from getSeriesUIDFolderDict import getSeriesUIDFolderDict
 from joblib import Parallel, delayed
 
-# Some patients have multiple lesions stored in separate assessor files so get unique patient IDs
-rtsFolder = '/Users/morton/Dicom Files/RADSARC_R/XNAT/assessors/assessors_2022.08.09_22.27.30'
+rtsFolder = '/Users/morton/Dicom Files/RADSARC_R/XNAT/assessors/assessors_2022.10.31_09.33.11'
 rtsFiles = glob.glob(os.path.join(rtsFolder, 'lesion', '*.dcm'))
 patientIDs = list(set([os.path.split(x)[1].split('__II__')[0] for x in rtsFiles]))
 patientIDs.sort()
-patientIDs = ['RMH_RSRC076']
 
 # dictionary to locate the images referenced by the rts files
 seriesFolderDict = getSeriesUIDFolderDict('/Users/morton/Dicom Files/RADSARC_R/XNAT/referencedScans')
@@ -130,14 +128,14 @@ thumbnailFolder = os.path.join('/Users/morton/Dicom Files/RADSARC_R/XNAT/roiThum
 if not os.path.exists(thumbnailFolder):
     os.makedirs(thumbnailFolder)
 
-# single threaded for debugging
-errorMessages = []
-for patientID in patientIDs:
-    message = processOnePatient(patientID, rtsFolder, seriesFolderDict, thumbnailFolder)
-    errorMessages.append(message)
+# # single threaded for debugging
+# errorMessages = []
+# for patientID in patientIDs:
+#     message = processOnePatient(patientID, rtsFolder, seriesFolderDict, thumbnailFolder)
+#     errorMessages.append(message)
 
 # multi-threaded for speed
-# errorMessages = Parallel(n_jobs=6)(delayed(processOnePatient)(patientID, rtsFolder, seriesFolderDict, thumbnailFolder) for patientID in patientIDs)
+errorMessages = Parallel(n_jobs=2)(delayed(processOnePatient)(patientID, rtsFolder, seriesFolderDict, thumbnailFolder) for patientID in patientIDs)
 
 for errorMessage in errorMessages:
     if errorMessage is not None:

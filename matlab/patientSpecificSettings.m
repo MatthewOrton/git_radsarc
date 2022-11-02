@@ -2,6 +2,160 @@ function patientSettings = patientSpecificSettings(allPatientIDs, defaultPrior)
 
 patientSettings = containers.Map;
 
+% The RMH data had dediff ROIs whenever all_dediff=True, which means the NaN in element (3) of the prior was filled in
+% using the dediff ROI.  The EORTC do not have these ROIs, so get rid of
+% the NaNs.  The prior isn't actually used, it's just so the code runs
+% before it gets to the part that sets all pixels to dediff
+eortcDefaultPrior = defaultPrior;
+eortcDefaultPrior.mu_mu(3) = 100;
+eortcDefaultPrior.sigma_mu(3) = 10;
+
+patientSettings('EORTCRSRC_001') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-80.1162; -31.4775; 12.0144; 500];
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [17.0539; 10.0888; 17.3344; 1];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_004') = myStruct('only_probe_dediff', true, 'prior', thisPrior, 'minPixelCount_welldiff_hole_fill_per_slice', 100, 'minPixelCount_myxoid_hole_fill_per_slice', 100);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-60.1284; -33.6999; 44.4113; 171.8017]; % -32.884, -25.3368, 106.9648, 125.6064
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [23.8692; 17.5337; 30.1625; 74.746];
+thisPrior.sigma_cov(1:4) = 0.0001;
+thisPrior.calcificationThreshold = 125.6064;
+patientSettings('EORTCRSRC_006') = myStruct('prior', thisPrior, 'minPixelCount_calc_to_dediff_per_slice', 10);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-62.9093; -17.6262; 31.1057; 229.7045];
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [11.4531; 14.9938; 15.0678; 123.4692];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_008') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice', 250, 'minPixelCount_myxoid_hole_fill_per_slice', 50, 'minPixelCount_welldiff_hole_fill_per_slice', 100);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-55.7938; -0.58287; 89.0688; 500];
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [24.8344; 9.9216; 11.2825; 1];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_009') = myStruct('prior', thisPrior, 'convert_myxoid_to_dediff', true, 'minPixelCount_dediff_hole_fill_per_slice', 150, 'minPixelCount_myxoid_hole_fill_per_slice', 150, 'minPixelCount_welldiff_hole_fill_per_slice', 50);
+
+patientSettings('EORTCRSRC_010') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-79.9356; -2.8715; 35.431; 158.1967];
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [25.1683; 10.3291; 12.3124; 20.9256];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_011') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice', 150, 'minPixelCount_myxoid_hole_fill_per_slice', 50, 'minPixelCount_welldiff_hole_fill_per_slice', 200);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-69.198; -14.059; 36.6832; 174.8854]; % -42.5876, 7.008, 96, 100
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [19.0461; 17.0138; 18.682; 145.5442];
+thisPrior.sigma_cov(1:4) = 0.0001;
+thisPrior.calcificationThreshold = 100;
+patientSettings('EORTCRSRC_012') = myStruct('prior', thisPrior);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-75.9304; -19.6986; 25.9365; 246.0746];
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [17.0666; 13.1486; 13.789; 161.3866];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_014') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice', 50, 'minPixelCount_myxoid_hole_fill_per_slice', 50, 'minPixelCount_welldiff_hole_fill_per_slice', 200);
+
+patientSettings('EORTCRSRC_015') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+patientSettings('EORTCRSRC_017') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-73.5898; -5.4627; 25.811; 156.9792];
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [21.4125; 10.7914; 9.6864; 31.8575];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_018') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice', 500, 'minPixelCount_myxoid_hole_fill_per_slice', 50, 'minPixelCount_welldiff_hole_fill_per_slice', 200);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-73.6176; -22.3827; 34.1963; 104.6551];
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [9.5911; 16.6005; 14.726; 5.9578];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_020') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice', 50, 'minPixelCount_myxoid_hole_fill_per_slice', 50, 'minPixelCount_welldiff_hole_fill_per_slice', 50);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-76.7896; -38.5341; 43.2741; 500];
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [5.5009; 23.7905; 9.2927; 1];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_022') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice', 50, 'minPixelCount_myxoid_hole_fill_per_slice', 50, 'minPixelCount_welldiff_hole_fill_per_slice', 50);
+
+patientSettings('EORTCRSRC_023') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+patientSettings('EORTCRSRC_025') = myStruct('prior', eortcDefaultPrior, 'all_welldiff', true);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-79.0226; -39.2503; 13.2262; 500]; % -52.2912, -25.3368, 139.6228, 100
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [16.7101; 12.5384; 15.5592; 1];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_030') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice', 50, 'minPixelCount_myxoid_hole_fill_per_slice', 50, 'minPixelCount_welldiff_hole_fill_per_slice', 50);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-69.6385; -22.7353; 35.6643; 137.6]; % -49.6496, 2.6956, 123.45, 100
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [18.6085; 20.9641; 24.0132; 6.5334];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_035') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice', 50, 'minPixelCount_myxoid_hole_fill_per_slice', 50, 'minPixelCount_welldiff_hole_fill_per_slice', 50);
+
+patientSettings('EORTCRSRC_040') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+patientSettings('EORTCRSRC_042') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-79.1033; -30.6813; 70.0688; 218.8389]; % -58.76, 0, 125.6064, 148.248
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [11.7254; 19.7756; 30.7991; 88.8632];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_045') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice', 1000);
+
+patientSettings('EORTCRSRC_051') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+patientSettings('EORTCRSRC_052') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-62.8364; -1.1871; 57.0008; 500]; % -27.4932, 24.2588, 176.2804, 100
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [21.139; 17.9038; 12.9577; 1];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_054') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice', 50, 'minPixelCount_myxoid_hole_fill_per_slice', 50, 'minPixelCount_welldiff_hole_fill_per_slice', 50);
+
+patientSettings('EORTCRSRC_057') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-96.7709; -30.8586; 42.1231; 500]; % -73.8544, 22.1024, 100, 100
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [17.7185; 30.7729; 20.6312; 1];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_058') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice', 50, 'minPixelCount_myxoid_hole_fill_per_slice', 50, 'minPixelCount_welldiff_hole_fill_per_slice', 50);
+
+patientSettings('EORTCRSRC_059') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+thisPrior = defaultPrior;
+thisPrior.mu_mu = [-69.9089; -6.8238; 56.8861; 500]; % -40.4312, 24.2588, 173.046, 100
+thisPrior.mu_sigma(1:4) = 0.001^2;
+thisPrior.sigma_mu = [20.894; 23.951; 20.3221; 1];
+thisPrior.sigma_cov(1:4) = 0.0001;
+patientSettings('EORTCRSRC_061') = myStruct('prior', thisPrior, 'minPixelCount_dediff_hole_fill_per_slice', 50, 'minPixelCount_myxoid_hole_fill_per_slice', 50, 'minPixelCount_welldiff_hole_fill_per_slice', 50);
+
+patientSettings('EORTCRSRC_063') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+patientSettings('EORTCRSRC_067') = myStruct('prior', eortcDefaultPrior, 'all_dediff', true);
+
+
+
+
+
 patientSettings('RMH_RSRC002') = myStruct('only_probe_dediff', true, 'fill_dediff', true, 'minPixelCount_welldiff_hole_fill_per_slice', 200, 'minPixelCount_myxoid_hole_fill_per_slice', 200);
 patientSettings('RMH_RSRC003') = myStruct('only_probe_dediff', true, 'fill_dediff', true, 'minPixelCount_myxoid_to_welldiff_per_slice', 400, 'minPixelCount_welldiff_to_myxoid_per_slice', 400);
 
@@ -38,6 +192,7 @@ thisPrior.calcificationThreshold = 125;
 patientSettings('RMH_RSRC016') = myStruct('prior', thisPrior, 'minPixelCount_welldiff_hole_fill_per_slice', 100, 'minPixelCount_myxoid_hole_fill_per_slice', 100, 'minPixelCount_dediff_hole_fill_per_slice', 100);
 
 patientSettings('RMH_RSRC019') = myStruct('only_probe_dediff', true, 'fill_dediff', true, 'minPixelCount_welldiff_hole_fill_per_slice', 100, 'minPixelCount_myxoid_hole_fill_per_slice', 100);
+
 patientSettings('RMH_RSRC021') = myStruct('all_dediff', true);
 
 thisPrior = defaultPrior;
@@ -540,6 +695,7 @@ end
                      'convert_myxoid_to_dediff', ...
                      'convert_myxoid_to_welldiff', ...
                      'all_dediff', ...
+                     'all_welldiff', ...
                      'convert_welldiff_to_myxoid', ...
                      'number_largest_dediff_and_myxoid', ...
                      'number_largest_myxoid', ...
@@ -553,6 +709,7 @@ end
                      'minPixelCount_myxoid_hole_fill_per_slice_including_calcif', ...
                      'minPixelCount_welldiff_hole_fill_per_slice_including_calcif', ...
                      'minPixelCount_dediff_hole_fill_per_slice_including_calcif', ...
+                     'minPixelCount_calc_to_dediff_per_slice', ...
                      'maxImageValue_welldiff', ...
                      'lowThresholdMyxoidToWellDiff', ...
                      'highThresholdMyxoidToDeDiff_per_slice', ...

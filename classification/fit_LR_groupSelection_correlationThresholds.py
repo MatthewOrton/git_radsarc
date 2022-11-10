@@ -89,12 +89,18 @@ def fit_LR_groupSelection_correlationThresholds(df, target, settings={}):
         resultsFile = None
         settings['resultsFile'] = resultsFile
 
+    if 'penalty' in settings:
+        penalty = settings['penalty']
+    else:
+        penalty = 'l1'
+        settings['penalty'] = penalty
+
     # extract data
     X = df.drop(target, axis=1)
     y = df[target]
 
     inner_pipeline = Pipeline([('groupSelector', featureSelection_groupName()),
-                               ('lr', LogisticRegression(solver="liblinear", max_iter=10000, penalty='l2'))])
+                               ('lr', LogisticRegression(solver="liblinear", max_iter=10000, penalty=penalty))])
 
     inner_p_grid = {'groupSelector__groupFilter': groupHierarchy,
                     'lr__C': np.logspace(np.log10(0.05), np.log10(50), 10)}

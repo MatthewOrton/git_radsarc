@@ -37,14 +37,18 @@ shutil.copyfile(project["paramFileName"], os.path.join(project["outputPath"], 'c
 thumbnailPathStr = 'roiThumbnails'
 
 # all patients
-# assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_SEG_2022.09.02_00.02.25', '*.dcm'))
+assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_SEG_2022.09.02_00.02.25', '*.dcm'))
 
 # repro patients
-assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_SEG_2022.09.06_21.24.49', '*.dcm'))
+# assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_SEG_2022.09.06_21.24.49', '*.dcm'))
+
+# test
+# assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'untitled folder', '*.dcm'))
 
 assessors.sort()
 
-assessors = [assessors[11]]
+# assessors = [assessors[83]]
+# assessors = [assessors[14]]
 
 thumbnailFiles = []
 resultsFiles = []
@@ -131,6 +135,20 @@ for n, assessor in enumerate(assessors):
             radAn.featureVector['lesion_sarcomaFeature_' + region + 'VolumeFraction'] = volumeFraction
 
         resultsFiles.append(radAn.saveResult())
+
+        if saveThumbnails:
+            radAn.mask = masks['lesion']
+            showMaskBoundary = True
+            showContours = False
+            showMaskHolesWithNewColour = True
+            vmin = -135
+            vmax = 215
+            thumbnail = radAn.saveThumbnail(vmin=vmin, vmax=vmax, showMaskBoundary=showMaskBoundary,
+                                            showContours=showContours, showHistogram=False, linewidth=0.04,
+                                            showMaskHolesWithNewColour=showMaskHolesWithNewColour, pathStr=thumbnailPathStr,
+                                            warningMessage=sopInstDictWarning)
+            thumbnailFiles.append(thumbnail["fileName"])
+
 
     except:
         print('\033[1;31;48m'+'_'*50)

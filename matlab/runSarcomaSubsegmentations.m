@@ -31,7 +31,6 @@ for r = 1:length(regions)
     rtsFiles = dir(fullfile(rootFolder, sourceFolder, '*.dcm'));
     rtsFilesHere = arrayfunQ(@(x) x.name, rtsFiles);
     patIDs = cellfunQ(@(x) strsplitN(x, '__II__', 1), rtsFilesHere);
-    %patIDs = {'RMH_RSRC068'};
 
     % default prior settings - may be overwridden by patientSpecificSettings()
     defaultPrior.mu_mu = [-80; -10; NaN; 200];
@@ -56,7 +55,9 @@ for r = 1:length(regions)
     % values for remaining patients.
     patientSettings = patientSpecificSettings(patIDs, defaultPrior);
 
-    for nRts =  1:50  %1:length(patIDs)
+    patIDs = {'EORTCRSRC_052'};
+
+    for nRts =  1 %51:length(patIDs)
 
         disp(patIDs{nRts})
         try
@@ -320,6 +321,9 @@ diary off
     pixels = roi.im(roi.mask);
     h = histogram(pixels(pixels>x(1) & pixels<x(end)));
     binEdges = h.BinEdges;
+    if mean(diff(binEdges))<1
+        binEdges = binEdges(1):1:binEdges(end);
+    end
     histogram(pixels, 'BinEdges', [binEdges Inf], 'Normalization','countdensity', 'EdgeColor', 'none');
     hold on
     PreviousColor

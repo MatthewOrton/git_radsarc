@@ -148,7 +148,7 @@ def fit_LR_groupSelection_correlationThresholds(df, target, settings={}):
 
 
 
-def displayResultExperiments(result, titleStr=None):
+def plotResultExperiments(result, titleStr=None):
 
     groupHierarchy = groupStrsDisp(result['settings']['groupHierarchy'])
 

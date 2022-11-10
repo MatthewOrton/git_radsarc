@@ -93,6 +93,8 @@ function slider1_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+
+hObject.Value = round(hObject.Value);
 updateMask(handles)
 
 % --- Executes during object creation, after setting all properties.
@@ -115,6 +117,8 @@ function slider2_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+
+hObject.Value = round(hObject.Value);
 updateMask(handles)
 
 % --- Executes during object creation, after setting all properties.
@@ -137,6 +141,8 @@ function slider3_Callback(hObject, eventdata, handles)
 
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
+
+hObject.Value = round(hObject.Value);
 updateMask(handles)
 
 % --- Executes during object creation, after setting all properties.
@@ -177,12 +183,10 @@ colormap(handles.axes1, 'gray')
 
 hold(handles.axes1,'off')
 
-limits = handles.figure1.UserData.CLim;
-
-t1 = limits(1) + (limits(2)-limits(1))*handles.slider1.Value;
-t2 = limits(1) + (limits(2)-limits(1))*handles.slider2.Value;
-t3 = limits(1) + (limits(2)-limits(1))*handles.slider3.Value;
-t3x = limits(1) + (limits(2)-limits(1))*handles.slider5.Value;
+t1 = handles.slider1.Value;
+t2 = handles.slider2.Value;
+t3 = handles.slider3.Value;
+t3x = handles.slider5.Value;
 
 handles.text14.String = num2str(t1);
 handles.text15.String = num2str(t2);
@@ -325,11 +329,11 @@ disp(['thisPrior.mu_mu = [' num2str(handles.text1.String) '; ' ...
                             num2str(handles.text7.String) ']; % ' ...
                             num2str(handles.text14.String) ', ' ...
                             num2str(handles.text15.String) ', ' ...
-                            num2str(handles.text16.String) ', ' ...
-                            num2str(handles.text17.String)])
+                            num2str(handles.text16.String)])
 disp('thisPrior.mu_sigma(1:4) = 0.001^2;')
 disp(['thisPrior.sigma_mu = [' num2str(handles.text2.String) '; ' num2str(handles.text4.String) '; ' num2str(handles.text6.String) '; ' num2str(handles.text8.String) '];'])
 disp('thisPrior.sigma_cov(1:4) = 0.0001;')
+disp(['thisPrior.calcificationThreshold = ' num2str(handles.text17.String) ';'])
 disp('')
 
 % Hint: delete(hObject) closes the figure
@@ -386,6 +390,7 @@ function slider5_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'Value') returns position of slider
 %        get(hObject,'Min') and get(hObject,'Max') to determine range of slider
 
+hObject.Value = round(hObject.Value);
 updateMask(handles)
 
 

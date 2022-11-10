@@ -9,9 +9,13 @@ with open('/Users/morton/Documents/git/git_radsarc/classification/debugVariables
 
 settings['thresholds'] = [0.6] #, 0.8, 1.0]
 settings['n_jobs'] = 1
+settings['penalty'] = 'l2'
+settings['n_splits'] = 5
+settings['n_repeats'] = 1
 
 result = fit_LR_groupSelection_correlationThresholds(df, target, settings=settings)
 
 # plotResultExperiments(result)
 
-displayOneExperiment(result, threshold=0.6)
+bestCoef, pdFreq = displayOneExperiment(result, threshold=0.6)
+

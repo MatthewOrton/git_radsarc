@@ -238,11 +238,11 @@ def displayOneExperiment(result, threshold=None):
 
     X = result['df'].drop(result['target'], axis=1)
 
-    colMask0 = copy.deepcopy(model.best_estimator_.steps[0][1].mask_)
-    colMask1 = model.best_estimator_.steps[1][1].colMask_
+    colMask0 = copy.deepcopy(model.steps[0][1].mask_)
+    colMask1 = model._final_estimator.best_estimator_.steps[0][1].colMask_
     colMask0[colMask0] = colMask1
     bc = np.zeros((X.shape[1]))
-    bc[colMask0] = copy.deepcopy(model.best_estimator_._final_estimator.coef_).ravel()
+    bc[colMask0] = copy.deepcopy(model._final_estimator.best_estimator_._final_estimator.coef_).ravel()
     bestCoef = pd.DataFrame({'Feature': list(np.array(X.columns)[bc != 0]), 'Coef': list(bc[bc != 0])})
     bestCoef = bestCoef.sort_values(by='Coef', ascending=False, key=abs)
     bestCoef = bestCoef.loc[bestCoef.Coef != 0, :]
@@ -251,10 +251,10 @@ def displayOneExperiment(result, threshold=None):
 
     bc = np.zeros((len(cv_result['estimator']), X.shape[1]))
     for n, ecv in enumerate(cv_result['estimator']):
-        colMask0 = copy.deepcopy(ecv.best_estimator_.steps[0][1].mask_)
-        colMask1 = ecv.best_estimator_.steps[1][1].colMask_
+        colMask0 = copy.deepcopy(ecv.steps[0][1].mask_)
+        colMask1 = ecv._final_estimator.best_estimator_.steps[0][1].colMask_
         colMask0[colMask0] = colMask1
-        bc[n, colMask0] = copy.deepcopy(ecv.best_estimator_._final_estimator.coef_)
+        bc[n, colMask0] = copy.deepcopy(ecv._final_estimator.best_estimator_._final_estimator.coef_)
         coef = pd.DataFrame(
             {'Feature': list(np.array(X.columns)[bc[n, :].ravel() != 0]), 'Coef': list(bc[n, bc[n, :] != 0])})
         coef = coef.sort_values(by='Coef', ascending=False, key=abs)

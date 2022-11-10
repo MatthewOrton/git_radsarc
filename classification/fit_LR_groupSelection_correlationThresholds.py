@@ -14,7 +14,7 @@ import dill
 user = os.path.expanduser("~")
 
 sys.path.append(os.path.join(user, 'Documents/git/git_icrpythonradiomics/machineLearning'))
-from featureSelection import featureSelection_correlation, featureSelection_groupName
+from featureSelection import featureSelection_correlation, featureSelection_groupName, StandardScalerDf
 
 # function to make group strings easier to read
 def groupStrsDisp(strGroups):
@@ -93,32 +93,53 @@ def fit_LR_groupSelection_correlationThresholds(df, target, settings={}):
     X = df.drop(target, axis=1)
     y = df[target]
 
-    pipe = Pipeline([('correlationSelector', featureSelection_correlation(threshold=0.6, exact=False, featureGroupHierarchy=correlationHierarchy)),
-                     ('groupSelector', featureSelection_groupName()),
-                     ('scaler', StandardScaler()),
-                     ('lr', LogisticRegression(solver="liblinear", max_iter=10000, penalty='l1'))])
+    # pipe = Pipeline([('correlationSelector', featureSelection_correlation(threshold=0.6, exact=False, featureGroupHierarchy=correlationHierarchy)),
+    #                  ('groupSelector', featureSelection_groupName()),
+    #                  ('scaler', StandardScaler()),
+    #                  ('lr', LogisticRegression(solver="liblinear", max_iter=10000, penalty='l1'))])
+    #
+    # p_grid = {'lr__C': np.logspace(np.log10(0.05), np.log10(50), 10),
+    #           'groupSelector__groupFilter': groupHierarchy}
 
-    p_grid = {'lr__C': np.logspace(np.log10(0.05), np.log10(50), 10),
-              'groupSelector__groupFilter': groupHierarchy}
+    inner_pipeline = Pipeline([('groupSelector', featureSelection_groupName()),
+                               ('lr', LogisticRegression(solver="liblinear", max_iter=10000, penalty='l2'))])
+
+    inner_p_grid = {'groupSelector__groupFilter': groupHierarchy,
+                    'lr__C': np.logspace(np.log10(0.05), np.log10(50), 10)}
+
+    inner_model = GridSearchCV(estimator=inner_pipeline,
+                               param_grid=inner_p_grid,
+                               cv=StratifiedKFold(n_splits=5),
+                               refit=True,
+                               verbose=0,
+                               scoring='neg_log_loss',
+                               n_jobs=1)
+
+
+    model = Pipeline([('correlationSelector', featureSelection_correlation(threshold=0.9,
+                                                                            exact=False,
+                                                                            featureGroupHierarchy=correlationHierarchy)),
+                         ('scaler', StandardScalerDf()),
+                         ('model', inner_model)])
 
     experiments = []
 
     for threshold in thresholds:
 
-        pipe.steps[0][1].threshold = threshold
+        model.steps[0][1].threshold = threshold
 
         random_state = 42
         np.random.seed(random_state)
 
-        inner_cv = StratifiedKFold(n_splits=5)
-        model = GridSearchCV(estimator=pipe, param_grid=p_grid, cv=inner_cv, refit=True, verbose=0, scoring='neg_log_loss', n_jobs=n_jobs)
+        # inner_cv = StratifiedKFold(n_splits=5)
+        # model = GridSearchCV(estimator=pipe, param_grid=p_grid, cv=inner_cv, refit=True, verbose=0, scoring='neg_log_loss', n_jobs=n_jobs)
         model.fit(X, y)
 
         print('Threshold = ' + str(threshold))
-        print(groupStrsDisp(model.best_estimator_.steps[1][1].groupFilter))
+        print(groupStrsDisp(model.steps[2][1].best_estimator_.steps[0][1].groupFilter))
 
-        # set to 1 ready for using n_jobs = -1 for cross validation
-        model.n_jobs = 1
+        # # set to 1 ready for using n_jobs = -1 for cross validation
+        # model.n_jobs = 1
 
         validation = RepeatedStratifiedKFold(n_splits=n_splits, n_repeats=n_repeats)
 
@@ -143,16 +164,13 @@ def fit_LR_groupSelection_correlationThresholds(df, target, settings={}):
             'settings':settings,
             'df':df,
             'target':target,
-            'pipe':pipe,
-            'p_grid':p_grid}
+            'model':model}
 
 
 
 def plotResultExperiments(result, titleStr=None):
 
     groupHierarchy = groupStrsDisp(result['settings']['groupHierarchy'])
-
-    settings = result['settings']
 
     colNames = groupStrsDisp(groupHierarchy)
     colNames.insert(0, 'threshold')
@@ -161,8 +179,9 @@ def plotResultExperiments(result, titleStr=None):
 
     for n, experiment in enumerate(result['experiments']):
         cv_result = experiment['cv_result']
-        group_cv_counts = {}
-        group_cv = [groupStrsDisp(x.best_estimator_.steps[1][1].groupFilter) for x in cv_result['estimator']]
+        # group_cv_counts = {}
+
+        group_cv = [groupStrsDisp(x.steps[2][1].best_estimator_.steps[0][1].groupFilter) for x in cv_result['estimator']]
         groupCounts = [0] * len(groupHierarchy)
         for n, group in enumerate(groupStrsDisp(groupHierarchy)):
             groupCounts[n] = len([x for x in group_cv if x == group])
@@ -170,7 +189,7 @@ def plotResultExperiments(result, titleStr=None):
         groupCounts.insert(0, experiment['threshold'])
         groupFrequencyDf = pd.concat([groupFrequencyDf, pd.DataFrame(data=[groupCounts], columns=colNames)])
 
-        featureCount.append([np.sum(x.best_estimator_._final_estimator.coef_ != 0) for x in cv_result['estimator']])
+        featureCount.append([np.sum(x._final_estimator.best_estimator_._final_estimator.coef_ != 0) for x in cv_result['estimator']])
 
     groupFrequencyDf = groupFrequencyDf.reset_index(drop=True)
     featureCount = np.array(featureCount)
@@ -191,18 +210,20 @@ def plotResultExperiments(result, titleStr=None):
     cv_mean = [np.mean(experiment['cv_result']['test_score']) for experiment in result['experiments']]
     cv_std = [np.std(experiment['cv_result']['test_score']) for experiment in result['experiments']]
 
-    a[1].plot(settings['thresholds'], cv_mean, marker='.')
-    a[1].plot(settings['thresholds'], np.array(cv_mean) + np.array(cv_std), linestyle='--', color='C0')
-    a[1].plot(settings['thresholds'], np.array(cv_mean) - np.array(cv_std), linestyle='--', color='C0')
+    thresholds = result['settings']['thresholds']
+
+    a[1].plot(thresholds, cv_mean, marker='.')
+    a[1].plot(thresholds, np.array(cv_mean) + np.array(cv_std), linestyle='--', color='C0')
+    a[1].plot(thresholds, np.array(cv_mean) - np.array(cv_std), linestyle='--', color='C0')
     a[1].set_ylim([0.6, 1.05])
     a[1].set_xlim([0.42, 1.04])
     a[1].set_xticks([0.6, 0.7, 0.8, 0.9, 1.0])
     a[1].set_xlabel('Correlation threshold')
     a[1].set_ylabel('AUROC')
 
-    a[2].plot(settings['thresholds'], np.median(featureCount, axis=1), marker='.')
-    a[2].plot(settings['thresholds'], np.quantile(featureCount, 0.9, axis=1), linestyle='--', color='C0')
-    a[2].plot(settings['thresholds'], np.quantile(featureCount, 0.1, axis=1), linestyle='--', color='C0')
+    a[2].plot(thresholds, np.median(featureCount, axis=1), marker='.')
+    a[2].plot(thresholds, np.quantile(featureCount, 0.9, axis=1), linestyle='--', color='C0')
+    a[2].plot(thresholds, np.quantile(featureCount, 0.1, axis=1), linestyle='--', color='C0')
     a[2].set_ylim([-2, 15])
     a[2].set_xlim([0.42, 1.04])
     a[2].set_xticks([0.6, 0.7, 0.8, 0.9, 1.0])
@@ -219,7 +240,7 @@ def displayOneExperiment(result, threshold=None):
 
     print('AUROC (CV) = ' + str(np.round(np.mean(cv_result['test_score']), 5)) + '\n')
 
-    print('Feature group = ' + groupStrsDisp(model.best_estimator_.steps[1][1].groupFilter) + '\n')
+    print('Feature group = ' + groupStrsDisp(model.steps[2][1].best_estimator_.steps[0][1].groupFilter) + '\n')
 
     # Get the non-zero LR coefficients
 

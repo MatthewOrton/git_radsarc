@@ -190,7 +190,7 @@ def plotResultExperiments(result, titleStr=None):
     f, a = plt.subplots(3, 1, figsize=(12, 12))
 
     for group in groupStrsDisp(groupHierarchy):
-        a[0].plot(groupFrequencyDf['threshold'], 100 * groupFrequencyDf[group], label=group, marker='.')
+        a[0].plot(groupFrequencyDf['threshold'], 100 * groupFrequencyDf[group], label=group)
     a[0].legend(fontsize=10, loc='upper left')
     a[0].set_xlabel('Correlation threshold')
     a[0].set_ylabel('Selection frequency / %')
@@ -204,7 +204,7 @@ def plotResultExperiments(result, titleStr=None):
 
     thresholds = result['settings']['thresholds']
 
-    a[1].plot(thresholds, cv_mean, marker='.')
+    a[1].plot(thresholds, cv_mean)
     a[1].plot(thresholds, np.array(cv_mean) + np.array(cv_std), linestyle='--', color='C0')
     a[1].plot(thresholds, np.array(cv_mean) - np.array(cv_std), linestyle='--', color='C0')
     a[1].set_ylim([0.6, 1.05])
@@ -213,7 +213,7 @@ def plotResultExperiments(result, titleStr=None):
     a[1].set_xlabel('Correlation threshold')
     a[1].set_ylabel('AUROC')
 
-    a[2].plot(thresholds, np.median(featureCount, axis=1), marker='.')
+    a[2].plot(thresholds, np.median(featureCount, axis=1))
     a[2].plot(thresholds, np.quantile(featureCount, 0.9, axis=1), linestyle='--', color='C0')
     a[2].plot(thresholds, np.quantile(featureCount, 0.1, axis=1), linestyle='--', color='C0')
     a[2].set_ylim([-2, 15])

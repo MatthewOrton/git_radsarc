@@ -93,14 +93,6 @@ def fit_LR_groupSelection_correlationThresholds(df, target, settings={}):
     X = df.drop(target, axis=1)
     y = df[target]
 
-    # pipe = Pipeline([('correlationSelector', featureSelection_correlation(threshold=0.6, exact=False, featureGroupHierarchy=correlationHierarchy)),
-    #                  ('groupSelector', featureSelection_groupName()),
-    #                  ('scaler', StandardScaler()),
-    #                  ('lr', LogisticRegression(solver="liblinear", max_iter=10000, penalty='l1'))])
-    #
-    # p_grid = {'lr__C': np.logspace(np.log10(0.05), np.log10(50), 10),
-    #           'groupSelector__groupFilter': groupHierarchy}
-
     inner_pipeline = Pipeline([('groupSelector', featureSelection_groupName()),
                                ('lr', LogisticRegression(solver="liblinear", max_iter=10000, penalty='l2'))])
 
@@ -131,15 +123,10 @@ def fit_LR_groupSelection_correlationThresholds(df, target, settings={}):
         random_state = 42
         np.random.seed(random_state)
 
-        # inner_cv = StratifiedKFold(n_splits=5)
-        # model = GridSearchCV(estimator=pipe, param_grid=p_grid, cv=inner_cv, refit=True, verbose=0, scoring='neg_log_loss', n_jobs=n_jobs)
         model.fit(X, y)
 
         print('Threshold = ' + str(threshold))
         print(groupStrsDisp(model.steps[2][1].best_estimator_.steps[0][1].groupFilter))
-
-        # # set to 1 ready for using n_jobs = -1 for cross validation
-        # model.n_jobs = 1
 
         validation = RepeatedStratifiedKFold(n_splits=n_splits, n_repeats=n_repeats)
 
@@ -179,7 +166,6 @@ def plotResultExperiments(result, titleStr=None):
 
     for n, experiment in enumerate(result['experiments']):
         cv_result = experiment['cv_result']
-        # group_cv_counts = {}
 
         group_cv = [groupStrsDisp(x.steps[2][1].best_estimator_.steps[0][1].groupFilter) for x in cv_result['estimator']]
         groupCounts = [0] * len(groupHierarchy)

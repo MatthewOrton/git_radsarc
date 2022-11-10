@@ -7,3 +7,7 @@ python/.DS_Store
 matlab/tmp-pdfcrop-92793-img.pdf
 matlab/tmp-pdfcrop-92793.tex
 *.asv
+classification/.ipynb_checkpoints/LR_GroupSelection-checkpoint.ipynb
+classification/.ipynb_checkpoints/LR_GroupSelection-checkpoint.ipynb
+classification/debugVariables.pickle
+classification/__pycache__/fit_LR_groupSelection_correlationThresholds.cpython-36.pyc

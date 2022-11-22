@@ -161,7 +161,7 @@ def fit_LR_groupSelection_correlationThresholds(df, target, settings={}):
 
 
 
-def plotResultExperiments(result, titleStr=None):
+def plotResultExperiments(result, titleStr=None, outputFile=None):
 
     groupHierarchy = groupStrsDisp(result['settings']['groupHierarchy'])
 
@@ -222,13 +222,24 @@ def plotResultExperiments(result, titleStr=None):
     a[2].set_xlabel('Correlation threshold')
     a[2].set_ylabel('Number of features')
 
+    if outputFile is not None:
+        plt.savefig(outputFile)
     plt.show()
 
 def displayOneExperiment(result, threshold=None):
 
+    if threshold is None:
+        # find threshold that gives largest AUROC
+        thresholds = np.array([x['threshold'] for x in result['experiments']])
+        AUROCs = np.array([np.mean(x['cv_result']['test_score']) for x in result['experiments']])
+        idx = np.argmax(AUROCs)
+        threshold = thresholds[idx]
+
     experiment = [x for x in result['experiments'] if x['threshold'] == threshold][0]
     model = experiment['model']
     cv_result = experiment['cv_result']
+
+    print('Threshold = ' + str(threshold))
 
     print('AUROC (CV) = ' + str(np.round(np.mean(cv_result['test_score']), 5)) + '\n')
 

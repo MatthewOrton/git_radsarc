@@ -37,18 +37,14 @@ shutil.copyfile(project["paramFileName"], os.path.join(project["outputPath"], 'c
 thumbnailPathStr = 'roiThumbnails'
 
 # all patients
-assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_SEG_2022.09.02_00.02.25', '*.dcm'))
+# assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_SEG_2022.09.02_00.02.25', '*.dcm'))
 
 # repro patients
-# assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_SEG_2022.09.06_21.24.49', '*.dcm'))
+assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'assessors_SEG_2022.09.06_21.24.49', '*.dcm'))
 
-# test
-# assessors = glob.glob(os.path.join(project["inputPath"],'assessors', 'untitled folder', '*.dcm'))
 
 assessors.sort()
 
-# assessors = [assessors[83]]
-# assessors = [assessors[14]]
 
 thumbnailFiles = []
 resultsFiles = []
@@ -133,6 +129,18 @@ for n, assessor in enumerate(assessors):
         for region in regions[0:-2]:
             volumeFraction = np.sum(masks[region])/np.sum(masks['lesion'])
             radAn.featureVector['lesion_sarcomaFeature_' + region + 'VolumeFraction'] = volumeFraction
+
+        lesionVolume = np.sum(masks['lesion'] == 1)
+        highThreshold = 19
+        lowThreshold = -50
+        calcThreshold = 228
+        voxelCountLow = np.sum(np.logical_and(radAn.imageData['imageVolume'] < lowThreshold, masks['lesion'] == 1))
+        voxelCountHigh = np.sum(np.logical_and(radAn.imageData['imageVolume'] > highThreshold, masks['lesion'] == 1))
+        voxelCountCalc = np.sum(np.logical_and(radAn.imageData['imageVolume'] > calcThreshold, masks['lesion'] == 1))
+
+        radAn.featureVector['lesion_sarcomaFeature_lowApproxVolFraction'] = voxelCountLow/lesionVolume
+        radAn.featureVector['lesion_sarcomaFeature_highApproxVolFraction'] = voxelCountHigh/lesionVolume
+        radAn.featureVector['lesion_sarcomaFeature_calcApproxVolFraction'] = voxelCountCalc/lesionVolume
 
         resultsFiles.append(radAn.saveResult())
 

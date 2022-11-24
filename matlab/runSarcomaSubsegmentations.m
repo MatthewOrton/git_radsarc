@@ -55,9 +55,9 @@ for r = 1:length(regions)
     % values for remaining patients.
     patientSettings = patientSpecificSettings(patIDs, defaultPrior);
 
-    patIDs = {'EORTCRSRC_052'};
+    %patIDs = {'EORTCRSRC_069'}; %{'EORTCRSRC_052', 'EORTCRSRC_219', 'EORTCRSRC_223', 'EORTCRSRC_229', 'EORTCRSRC_241', 'EORTCRSRC_252', 'EORTCRSRC_255'};
 
-    for nRts =  1 %51:length(patIDs)
+    for nRts =  1:length(patIDs)
 
         disp(patIDs{nRts})
         try
@@ -106,7 +106,7 @@ for r = 1:length(regions)
             outputFilename = fullfile(outputFolder, regions{r}, 'ext', strrep(thisLesionRts.name,'.dcm','.ext'));
 
             % save pdf and fig files
-            saveFigFile = false;
+            saveFigFile = true;
             writeThumbnailImage(outputFilename, thisLesionRts, saveFigFile);
 
             % save matlab variables
@@ -124,7 +124,7 @@ for r = 1:length(regions)
             elseif strcmp(regions{r},'repro')
                 StructureSetLabel = 'lesion_repro_four_subregions';
             end
-%             packageAndWriteDicomSeg(StructureSetLabel, roi, masks, vesselMask, outputFilename, maps);
+            packageAndWriteDicomSeg(StructureSetLabel, roi, masks, vesselMask, outputFilename, maps);
 
             disp(' ')
 
@@ -898,6 +898,32 @@ diary off
         masksHere(:,:,:,3) = maskDediff;
         masksHere(:,:,:,4) = maskCalc;
     end
+
+    if patSet.myxoidSliceRange
+        maskMyxoid = masksHere(:,:,:,2);
+        maskDediff = masksHere(:,:,:,3);
+        maskMyxoidRemove = maskMyxoid;
+        maskMyxoidRemove(:,:,patSet.myxoidSliceRange) = false;
+        maskMyxoid(maskMyxoidRemove) = false;
+        maskDediff(maskMyxoidRemove) = true;
+        masksHere(:,:,:,2) = maskMyxoid;
+        masksHere(:,:,:,3) = maskDediff;
+    end
+
+        % post-process to only keep a specified number of the largest
+    % myxoid regions, set the others to well-diff
+    if patSet.number_largest_myxoid_change_to_dediff
+        maskMyx = masksHere(:,:,:,2);
+        maskDediff = masksHere(:,:,:,3);
+        CC = bwconncomp(maskMyx);
+        [~, idx] = sort(cellfun(@length, CC.PixelIdxList),'descend');
+        idxToDeDiff = cell2mat(CC.PixelIdxList(idx(patSet.number_largest_myxoid_change_to_dediff+1:end))');
+        maskDediff(idxToDeDiff) = true;
+        maskMyx(idxToDeDiff) = false;
+        masksHere(:,:,:,2) = maskMyx;
+        masksHere(:,:,:,3) = maskDediff;
+    end
+
 
 
     end

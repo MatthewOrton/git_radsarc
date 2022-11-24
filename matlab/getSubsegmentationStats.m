@@ -171,6 +171,43 @@ subplot(2,3,5)
 plot(volumeFraction_percentileThreshold.low(:,I), volumeFraction.low, '.')
 
 %%
+
+figure('position',[680  605  682  492])
+
+subplot(2,2,1)
+plot(thresholds, score.low, 'DisplayName','low fixed')
+hold on
+plot(thresholds, score.high, 'DisplayName','high')
+plot(thresholds, score.calc, 'DisplayName','calc')
+legend(location='SouthWest')
+ylabel('Spearman correlation')
+xlabel('Threshold')
+hold off
+
+[~,Ilow] = max(score.low);
+subplot(2,2,2)
+plot(volumeFraction_threshold.low(:,Ilow), volumeFraction.low, '.')
+xlabel('Sub-seg volume fraction')
+ylabel('Approx volume fraction')
+title(['low threshold = ' num2str(thresholds(Ilow))])
+
+[~,Ihigh] = max(score.high);
+subplot(2,2,3)
+plot(volumeFraction_threshold.high(:,Ihigh), volumeFraction.high, '.')
+xlabel('Sub-seg volume fraction')
+ylabel('Approx volume fraction')
+title(['high threshold = ' num2str(thresholds(Ihigh))])
+
+[~,Icalc] = max(score.calc);
+subplot(2,2,4)
+plot(volumeFraction_threshold.calc(:,Icalc), volumeFraction.calc, '.')
+xlabel('Sub-seg volume fraction')
+ylabel('Approx volume fraction')
+title(['calcification threshold = ' num2str(thresholds(Icalc))])
+
+
+
+%%
 PatientID = arrayfunQ(@(x) strsplitN(x.name,'__II__',1), segFiles);
 volumeFractionLowApprox = volumeFraction_threshold.low(:,Ilow);
 volumeFractionHighApprox = volumeFraction_threshold.high(:,Ihigh);

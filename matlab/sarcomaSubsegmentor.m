@@ -10,7 +10,7 @@ if onlyLoadData
     return
 end
 
-skip = 1 + 0*ceil(size(roi.im,3)/14); roi.im = roi.im(:,:,1:skip:end); roi.mask = roi.mask(:,:,1:skip:end); smoothedThreshold(roi.im, [-200 200], roi.mask); return
+% skip = 1 + 0*ceil(size(roi.im,3)/14); roi.im = roi.im(:,:,1:skip:end); roi.mask = roi.mask(:,:,1:skip:end); smoothedThreshold(roi.im, [-200 200], roi.mask); return
 
 % % %dediffProbe.mask = dediffProbe.mask(:,:,2);
 % dediffProbe.sliceIndex = 20;

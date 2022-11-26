@@ -55,7 +55,7 @@ for r = 1:length(regions)
     % values for remaining patients.
     patientSettings = patientSpecificSettings(patIDs, defaultPrior);
 
-    %patIDs = {'EORTCRSRC_069'}; %{'EORTCRSRC_052', 'EORTCRSRC_219', 'EORTCRSRC_223', 'EORTCRSRC_229', 'EORTCRSRC_241', 'EORTCRSRC_252', 'EORTCRSRC_255'};
+    patIDs = {'EORTCRSRC_040'};
 
     for nRts =  1:length(patIDs)
 
@@ -266,8 +266,9 @@ diary off
         plot(pos(1,:),pos(2,:), 'w', 'LineWidth', 250/(ax(2)-ax(1))) % 'color', [0 0.65 0],
         set(gca,'ColorOrderIndex',1)
         for mm = 1:4
+            pos = GetPixellatedROI(masks(:,:,nn,mm));
             % erode mask so the bordering boundary lines don't overlap
-            pos = GetPixellatedROI(imerode(masks(:,:,nn,mm),strel('disk',1)));
+%             pos = GetPixellatedROI(imerode(masks(:,:,nn,mm),strel('disk',1)));
             plot(pos(1,:),pos(2,:), 'LineWidth', 200/(ax(2)-ax(1)))
         end
 

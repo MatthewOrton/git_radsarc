@@ -9,7 +9,6 @@ from sklearn.model_selection import KFold, StratifiedKFold, RepeatedStratifiedKF
 from sklearn.model_selection import cross_validate
 import os, warnings, copy, sys
 import matplotlib.pyplot as plt
-import dill
 
 user = os.path.expanduser("~")
 

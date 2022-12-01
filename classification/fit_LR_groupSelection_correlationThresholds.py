@@ -121,6 +121,7 @@ def fit_LR_groupSelection_correlationThresholds(df, target, settings={}):
 
     experiments = []
 
+    print('_'*len(thresholds))
     for threshold in thresholds:
 
         model.steps[0][1].threshold = threshold
@@ -130,8 +131,8 @@ def fit_LR_groupSelection_correlationThresholds(df, target, settings={}):
 
         model.fit(X, y)
 
-        print('Threshold = ' + str(threshold))
-        print(groupStrsDisp(model.steps[2][1].best_estimator_.steps[0][1].groupFilter))
+        # print('Threshold = ' + str(threshold))
+        # print(groupStrsDisp(model.steps[2][1].best_estimator_.steps[0][1].groupFilter))
 
         validation = RepeatedStratifiedKFold(n_splits=n_splits, n_repeats=n_repeats)
 
@@ -149,8 +150,8 @@ def fit_LR_groupSelection_correlationThresholds(df, target, settings={}):
         cv_mean = np.round(np.mean(cv_result['test_score']),3)
         cv_std  = np.round(np.std(cv_result['test_score']),4)
 
-        print('AUROC = ' + str(cv_mean) + ' \u00B1 ' + str(cv_std) + '\n')
-        
+        # print('AUROC = ' + str(cv_mean) + ' \u00B1 ' + str(cv_std) + '\n')
+        print('.', end='')
 
     return {'experiments':experiments,
             'settings':settings,

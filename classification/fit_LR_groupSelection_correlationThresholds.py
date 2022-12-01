@@ -153,6 +153,8 @@ def fit_LR_groupSelection_correlationThresholds(df, target, settings={}):
         # print('AUROC = ' + str(cv_mean) + ' \u00B1 ' + str(cv_std) + '\n')
         print('.', end='')
 
+    print('')
+
     return {'experiments':experiments,
             'settings':settings,
             'df':df,
@@ -243,7 +245,8 @@ def displayOneExperiment(result, threshold=None):
 
     print('AUROC (CV) = ' + str(np.round(np.mean(cv_result['test_score']), 5)) + '\n')
 
-    print('Feature group = ' + groupStrsDisp(model.steps[2][1].best_estimator_.steps[0][1].groupFilter) + '\n')
+    featureGroup = groupStrsDisp(model.steps[2][1].best_estimator_.steps[0][1].groupFilter)
+    print('Feature group = ' + featureGroup + '\n')
 
     # Get the non-zero LR coefficients
 
@@ -283,4 +286,4 @@ def displayOneExperiment(result, threshold=None):
 
     pdFreq = pdFreq.loc[pdFreq.Frequency > 0, :].sort_values(by='Frequency', ascending=False, key=abs)
 
-    return bestCoef, pdFreq
+    return bestCoef, pdFreq, threshold, featureGroup
